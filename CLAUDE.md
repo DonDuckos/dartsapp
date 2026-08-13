@@ -5,9 +5,9 @@
 > **Drei Cron-Jobs in GitHub Actions**, alle über OpenRouter mit **Kimi K2** (`moonshotai/kimi-k2-0905`, ~5x günstiger als das vorherige Claude-Modell, passt zum 3–8€/Monat-Budget):
 > - **News-Agent** (`scripts/news-agent/`, alle 3 Std.): Websuche allgemein + pro favorisiertem Spieler, Zeitfenster 24 Std.
 > - **Match-Agent** (`scripts/match-agent/`, alle 15 Min.): hält Match-Status/Score aktuell, schaltet Events automatisch auf „live". Hat einen Plausibilitäts-Check (verwirft „live"/„finished", wenn der Ansetzungstermin noch >30 Min. in der Zukunft liegt) — beim Testen mit Kimi K2 einmal eine Modell-Halluzination abgefangen.
-> - **Profile-Agent** (`scripts/profile-agent/`, manuell + wöchentlich Mo. 6 Uhr): ergänzt Spieler-Vitas, Zitate (mit Quelle) und Fotos (ausschließlich Wikimedia Commons mit geprüfter Lizenz, keine KI-Einschätzung) sowie journalistische Location-Previews pro Event. Bereits einmal für alle 38 Spieler + 1 Event gelaufen.
+> - **Profile-Agent** (`scripts/profile-agent/`, manuell + wöchentlich Mo. 6 Uhr): ergänzt Spieler-Vitas, Zitate (mit Quelle), Fotos (ausschließlich Wikimedia Commons mit geprüfter Lizenz, keine KI-Einschätzung) sowie 3-Dart-Average/Checkout-Quote/180er/High-Finish pro Spieler und journalistische Location-Previews pro Event. Hat harte Plausibilitätsgrenzen für die Statistikfelder (z.B. High Finish max. 170 — das theoretische Maximum, ein Finish endet immer auf einem Doppel) und verwarf beim Testen bereits mehrere unmögliche/unbelegte Werte automatisch. Bereits zweimal für alle 38 Spieler + 1 Event gelaufen, Ergebnis stichprobenartig geprüft.
 >
-> Home-Screen zeigt Badge/Datum/Uhrzeit (korrekte Gerätezeitzone) bei „Nächstes Spiel" (klickbar → Event-Detail mit Termin/Ort/Format/Location-Preview/Spielplan) sowie die 3 aktuellsten News. Spieler-Detail zeigt Foto+Attribution, Vita und Zitat; Rangliste zeigt Foto-Avatare. Bewusste Grenze: Der Match-Agent erzeugt keine Folgerunden-Matches (Viertelfinale etc.) — dafür fehlt noch ein Turnierbaum-Datenmodell.
+> Home-Screen zeigt Badge/Datum/Uhrzeit (korrekte Gerätezeitzone) bei „Nächstes Spiel" (klickbar → Event-Detail mit Termin/Ort/Format/Location-Preview/Spielplan) sowie die 3 aktuellsten News. Spieler-Detail zeigt Foto+Attribution, Vita, Zitat und Statistik; Rangliste zeigt Foto-Avatare (mit Fallback bei Ladefehler, `lib/widgets/player_avatar.dart`). Bewusste Grenze: Der Match-Agent erzeugt keine Folgerunden-Matches (Viertelfinale etc.) — dafür fehlt noch ein Turnierbaum-Datenmodell.
 
 ## Ziel & Kontext
 
@@ -154,12 +154,13 @@ Detail-Screens (per Push von obigen erreichbar, kein eigener Tab):
 15. ~~Zeitzonen-Fix (Home/Event-Detail zeigen jetzt korrekte Gerätezeitzone)~~ ✓ erledigt (2026-08-13 — war nur eine Emulator-Einstellung, kein Code-Bug)
 16. ~~Agenten auf OpenRouter/Kimi K2 statt Claude umstellen~~ ✓ erledigt (2026-08-13, `moonshotai/kimi-k2-0905`, ~5x günstiger)
 17. ~~Profile-Agent: Spieler-Vitas/Zitate/Fotos (Wikimedia) + Event-Location-Reporting~~ ✓ erledigt (2026-08-13, `scripts/profile-agent/`)
+18. ~~Statistiken (Average/Checkout-Quote/180er/High-Finish) nachrecherchieren~~ ✓ erledigt (2026-08-13, inkl. Plausibilitäts-Check nach gefundenen Ausreißern — siehe git-Historie)
 
 ## Mögliche Erweiterungen (kein Auftrag, nur Ideen für später)
 
 - **Turnierbaum-Datenmodell**: Der Match-Agent kann aktuell nur bestehende Matches aktualisieren, aber keine Folgerunden (Viertelfinale etc.) automatisch anlegen, da die Bracket-Struktur (wer spielt nach einem Sieg gegen wen) noch nicht modelliert ist. Für volle Turnierbaum-Automatisierung müsste das Datenmodell um Round/Bracket-Beziehungen erweitert werden.
 - Sobald das New Zealand Darts Masters vorbei ist: nächstes echtes Event (z.B. Australian Darts Masters, 21.–22.08.) nach demselben Muster wie `scripts/seed/seed-nz-masters-2026.mjs` einpflegen
-- Checkout-Quote/180er/High-Finish (Live-Statistiken, nicht Bio-Daten) sind weiterhin für alle Spieler unbefüllt — bräuchten eine echte Statistik-Quelle, nicht nur Websuche
+- Für 10 von 38 Spielern (u.a. Andrew Gilding, Damon Heta, Martin Schindler, Jonny Tata) fand der Profile-Agent auch im zweiten Anlauf keine verlässlichen Saison-2026-Statistiken — ehrlich leer gelassen statt geraten, könnte bei einem späteren Lauf erneut versucht werden
 - Push-Benachrichtigungen tatsächlich versenden (Firebase Cloud Messaging ist vorbereitet, aber noch nicht am Laufen)
 - Live-Highlight-Erkennung direkt aus eigenen Match-Daten statt nur externer Websuche
 - Journalistische "Warum spielt X nicht mit"-Storys: aktuell deckt die allgemeine News-Suche das teilweise ab, ein gezielterer Prompt könnte das noch verlässlicher machen
