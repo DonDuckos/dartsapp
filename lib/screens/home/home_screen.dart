@@ -62,7 +62,9 @@ class HomeScreen extends ConsumerWidget {
             )
           else if (event != null && nextMatch != null)
             _HeroNextCard(eventName: event.name, match: nextMatch, playerById: playerById)
-          else if (event == null)
+          else if (event != null)
+            _EventOnlyCard(eventName: event.name)
+          else
             const _EmptyHero(),
           if (flash != null) ...[
             const SizedBox(height: 14),
@@ -86,6 +88,34 @@ class HomeScreen extends ConsumerWidget {
                   ),
               ],
             ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EventOnlyCard extends StatelessWidget {
+  const _EventOnlyCard({required this.eventName});
+
+  final String eventName;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surface,
+        border: Border.all(color: AppColors.hairline),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('Nächstes Event', style: AppTypography.mono(size: 10, color: AppColors.inkFaint)),
+          const SizedBox(height: 6),
+          Text(eventName, style: AppTypography.body(size: 16, weight: FontWeight.w600)),
+          const SizedBox(height: 4),
+          Text('Spielplan noch nicht bekannt.', style: AppTypography.body(size: 12, color: AppColors.inkMuted)),
         ],
       ),
     );
