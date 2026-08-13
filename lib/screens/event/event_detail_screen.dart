@@ -96,6 +96,13 @@ class _EventInfoCard extends StatelessWidget {
             const SizedBox(height: 6),
             _InfoRow(label: 'Runde', value: event.currentRound!),
           ],
+          if (event.preview != null) ...[
+            const SizedBox(height: 10),
+            Container(height: 1, color: AppColors.hairline),
+            const SizedBox(height: 10),
+            Text(event.preview!,
+                style: AppTypography.body(size: 12, color: AppColors.inkMuted).copyWith(height: 1.5)),
+          ],
         ],
       ),
     );

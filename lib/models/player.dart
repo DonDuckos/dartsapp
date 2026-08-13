@@ -36,7 +36,10 @@ class Player {
     required this.rankingPosition,
     required this.stats,
     this.photoUrl,
+    this.photoAttribution,
     this.bio,
+    this.quote,
+    this.quoteSource,
   });
 
   final String id;
@@ -45,7 +48,13 @@ class Player {
   final int rankingPosition;
   final PlayerStats stats;
   final String? photoUrl;
+
+  /// Pflichtangabe bei Wikimedia-Commons-Fotos (Autor/Lizenz-Kurzform),
+  /// wird unter dem Bild angezeigt.
+  final String? photoAttribution;
   final String? bio;
+  final String? quote;
+  final String? quoteSource;
 
   factory Player.fromMap(String id, Map<String, dynamic> map) {
     return Player(
@@ -55,7 +64,10 @@ class Player {
       rankingPosition: map['rankingPosition'] as int,
       stats: PlayerStats.fromMap(Map<String, dynamic>.from(map['stats'] as Map)),
       photoUrl: map['photoUrl'] as String?,
+      photoAttribution: map['photoAttribution'] as String?,
       bio: map['bio'] as String?,
+      quote: map['quote'] as String?,
+      quoteSource: map['quoteSource'] as String?,
     );
   }
 
@@ -65,6 +77,9 @@ class Player {
         'rankingPosition': rankingPosition,
         'stats': stats.toMap(),
         'photoUrl': photoUrl,
+        'photoAttribution': photoAttribution,
         'bio': bio,
+        'quote': quote,
+        'quoteSource': quoteSource,
       };
 }

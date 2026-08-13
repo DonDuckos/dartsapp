@@ -86,7 +86,27 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                       ),
                     ),
                   ),
-                  title: Text(player.name, style: AppTypography.body(size: 14)),
+                  title: Row(
+                    children: [
+                      Container(
+                        width: 22,
+                        height: 22,
+                        margin: const EdgeInsets.only(right: 8),
+                        clipBehavior: Clip.antiAlias,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: player.photoUrl == null
+                              ? const LinearGradient(colors: [AppColors.accent, Color(0xFF7A5A1E)])
+                              : null,
+                          color: AppColors.surface2,
+                        ),
+                        child: player.photoUrl != null
+                            ? Image.network(player.photoUrl!, fit: BoxFit.cover)
+                            : null,
+                      ),
+                      Text(player.name, style: AppTypography.body(size: 14)),
+                    ],
+                  ),
                   subtitle: Text(player.country, style: AppTypography.mono(size: 10, color: AppColors.inkFaint)),
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,

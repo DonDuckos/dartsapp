@@ -14,6 +14,7 @@ class DartsEvent {
     required this.endDate,
     this.currentRound,
     this.venue,
+    this.preview,
   });
 
   final String id;
@@ -25,6 +26,10 @@ class DartsEvent {
   final String? currentRound;
   final String? venue;
 
+  /// Kurzer journalistischer Text zu Austragungsort/Rahmenbedingungen,
+  /// vom Profile-Agent recherchiert (siehe scripts/profile-agent).
+  final String? preview;
+
   factory DartsEvent.fromMap(String id, Map<String, dynamic> map) {
     return DartsEvent(
       id: id,
@@ -35,6 +40,7 @@ class DartsEvent {
       endDate: (map['endDate'] as Timestamp).toDate(),
       currentRound: map['currentRound'] as String?,
       venue: map['venue'] as String?,
+      preview: map['preview'] as String?,
     );
   }
 
@@ -46,6 +52,7 @@ class DartsEvent {
         'endDate': Timestamp.fromDate(endDate),
         'currentRound': currentRound,
         'venue': venue,
+        'preview': preview,
       };
 }
 

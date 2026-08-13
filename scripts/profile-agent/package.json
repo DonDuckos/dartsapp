@@ -1,0 +1,11 @@
+{
+  "name": "dartsapp-profile-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ergänzt Spieler-Vitas/Zitate/Fotos (Wikimedia Commons) und Event-Kurzreportagen. Läuft selten (manuell/wöchentlich), nicht im 3-Std.-Takt wie der News-Agent.",
+  "main": "index.mjs",
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}

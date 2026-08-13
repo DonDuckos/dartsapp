@@ -43,30 +43,70 @@ class PlayerDetailScreen extends ConsumerWidget {
         padding: const EdgeInsets.all(16),
         children: [
           Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Container(
                 width: 56,
                 height: 56,
+                clipBehavior: Clip.antiAlias,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  gradient: const LinearGradient(colors: [AppColors.accent, Color(0xFF7A5A1E)]),
+                  gradient: player.photoUrl == null
+                      ? const LinearGradient(colors: [AppColors.accent, Color(0xFF7A5A1E)])
+                      : null,
                 ),
+                child: player.photoUrl != null
+                    ? Image.network(player.photoUrl!, fit: BoxFit.cover)
+                    : null,
               ),
               const SizedBox(width: 14),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Platz ${player.rankingPosition} · ${player.country}',
-                      style: AppTypography.mono(size: 11, color: AppColors.inkFaint)),
-                  const SizedBox(height: 4),
-                  Text(player.name, style: AppTypography.body(size: 18, weight: FontWeight.w600)),
-                ],
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('Platz ${player.rankingPosition} · ${player.country}',
+                        style: AppTypography.mono(size: 11, color: AppColors.inkFaint)),
+                    const SizedBox(height: 4),
+                    Text(player.name, style: AppTypography.body(size: 18, weight: FontWeight.w600)),
+                    if (player.photoAttribution != null) ...[
+                      const SizedBox(height: 4),
+                      Text(player.photoAttribution!,
+                          style: AppTypography.mono(size: 9, color: AppColors.inkFaint)),
+                    ],
+                  ],
+                ),
               ),
             ],
           ),
           if (player.bio != null) ...[
             const SizedBox(height: 16),
             Text(player.bio!, style: AppTypography.body(size: 13, color: AppColors.inkMuted)),
+          ],
+          if (player.quote != null) ...[
+            const SizedBox(height: 14),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: AppColors.surface,
+                borderRadius: BorderRadius.circular(12),
+                border: const Border(left: BorderSide(color: AppColors.accent, width: 2)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('„${player.quote!}"',
+                      style: AppTypography.body(size: 13, weight: FontWeight.w600).copyWith(
+                            fontStyle: FontStyle.italic,
+                            height: 1.4,
+                          )),
+                  if (player.quoteSource != null) ...[
+                    const SizedBox(height: 6),
+                    Text('— ${player.quoteSource}',
+                        style: AppTypography.mono(size: 10, color: AppColors.inkFaint)),
+                  ],
+                ],
+              ),
+            ),
           ],
           const SizedBox(height: 24),
           Text('STATISTIK', style: AppTypography.mono(size: 11, color: AppColors.inkFaint)),
