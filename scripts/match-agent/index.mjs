@@ -16,7 +16,7 @@ const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-5";
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "moonshotai/kimi-k2-0905";
 
 // Zeitfenster um Start/Ende eines Events, in dem das Skript überhaupt aktiv
 // wird — hält die meisten der alle 15 Min. laufenden Aufrufe billig (kein
@@ -112,6 +112,19 @@ async function processEvent(event, playerNameById) {
 
     const update = await fetchMatchUpdate({ eventName: event.name, player1Name, player2Name });
     if (!update || !["scheduled", "live", "finished"].includes(update.status)) continue;
+
+    // Plausibilitäts-Check: ein Match kann nicht "live" oder "finished" sein,
+    // solange sein Ansetzungstermin noch deutlich in der Zukunft liegt — fängt
+    // Modell-Halluzinationen ab (z.B. Verwechslung mit einem anderen Turnier).
+    const scheduledAtMs = match.scheduledAt.toDate().getTime();
+    const EARLY_START_TOLERANCE_MS = 30 * 60 * 1000;
+    if (update.status !== "scheduled" && scheduledAtMs - Date.now() > EARLY_START_TOLERANCE_MS) {
+      console.warn(
+        `  ${player1Name} vs ${player2Name}: Modell meldet "${update.status}", Match beginnt aber erst ` +
+          `${match.scheduledAt.toDate().toISOString()} — als unplausibel verworfen.`,
+      );
+      continue;
+    }
 
     if (update.status === "live") anyLive = true;
     if (update.status === "scheduled" && match.status === "scheduled") continue; // keine Änderung

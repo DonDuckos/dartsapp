@@ -15,7 +15,7 @@ const db = getFirestore();
 // Beliebiges Modell aus https://openrouter.ai/models, ":online" hängt das
 // Web-Search-Plugin an. Per Repo-Variable OPENROUTER_MODEL überschreibbar,
 // ohne Code-Änderung (Settings → Secrets and variables → Actions → Variables).
-const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "anthropic/claude-sonnet-5";
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "moonshotai/kimi-k2-0905";
 
 const RESPONSE_FORMAT_INSTRUCTIONS =
   "Antworte ausschließlich mit einem JSON-Array, jedes Element mit den Feldern: " +
