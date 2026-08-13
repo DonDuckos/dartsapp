@@ -127,8 +127,10 @@ async function main() {
   const { nameToId, idToName } = await loadPlayerMaps();
 
   const candidates = await fetchNewsCandidates(
-    "Suche nach aktuellen Darts-News der letzten 3 Stunden (Turnierergebnisse, " +
-      "besondere Ankündigungen, Rekorde).",
+    "Suche nach aktuellen Darts-News der letzten 24 Stunden (Turnierergebnisse, " +
+      "besondere Ankündigungen, Rekorde, Interviews, Rangliste-Änderungen). Auch außerhalb " +
+      "laufender Turniere gibt es meist relevante Meldungen (Transfers, Aussagen, Vorschauen) " +
+      "— nicht nur auf Live-Ergebnisse beschränken.",
   );
 
   const favoritedIds = await loadFavoritedPlayerIds();
