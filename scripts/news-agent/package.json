@@ -3,10 +3,9 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Läuft alle 3 Std. per GitHub Actions Cron, sucht Darts-News, fasst sie zusammen und schreibt sie in Firestore.",
+  "description": "Läuft alle 3 Std. per GitHub Actions Cron, sucht über OpenRouter (Web-Suche) Darts-News (allgemein + pro favorisiertem Spieler) und schreibt sie in Firestore.",
   "main": "index.mjs",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.32.0",
     "firebase-admin": "^12.6.0"
   }
 }
