@@ -1,6 +1,6 @@
 # DartsApp — Projektauftrag für Claude Code
 
-> Status: **Echte PDC-Weltrangliste live, News-Agent läuft in GitHub Actions (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet. Google Sign-In läuft (SHA-1 registriert), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. Auf einem Windows-Emulator erfolgreich getestet. Der News-Agent (`scripts/news-agent/`) läuft über OpenRouter (Websuche via `:online`), sucht zusätzlich pro favorisiertem Spieler gezielt, GitHub Secrets sind gesetzt, Cron läuft automatisch alle 3 Std. **`players`-Collection enthält jetzt die echte PDC Order of Merit Top 30** (`scripts/seed/seed.mjs`, recherchiert 2026-08-13, siehe Quellenangabe im Skript-Header) — `events`/`matches`/`news` sind bewusst leer, bis echte Turnierdaten feststehen (offene Frage an den Nutzer, siehe Nächste Schritte).
+> Status: **Voller Echtdaten-Betrieb inkl. Live-Update-Automatisierung (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet. Google Sign-In läuft, Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. `players`-Collection enthält die echte PDC Order of Merit Top 30 (`scripts/seed/seed.mjs`). `events`/`matches` enthalten das echte New Zealand Darts Masters 2026 (`scripts/seed/seed-nz-masters-2026.mjs`, 14.–15.08., Spark Arena Auckland, komplette Erstrunden-Paarung). Zwei Cron-Jobs laufen in GitHub Actions: **News-Agent** (`scripts/news-agent/`, alle 3 Std., OpenRouter-Websuche, allgemein + pro Favorit) und **Match-Agent** (`scripts/match-agent/`, alle 15 Min., hält Match-Status/Score aktuell und schaltet Events automatisch auf „live"). Home-Screen zeigt Badge/Datum/Uhrzeit bei „Nächstes Spiel" (klickbar → Event-Detail mit Termin/Ort/Format) sowie die 3 aktuellsten News. Bewusste Grenze: Der Match-Agent erzeugt keine Folgerunden-Matches (Viertelfinale etc.) — dafür fehlt noch ein Turnierbaum-Datenmodell.
 
 ## Ziel & Kontext
 
@@ -141,12 +141,14 @@ Detail-Screens (per Push von obigen erreichbar, kein eigener Tab):
 9. ~~News-Agent auf OpenRouter umstellen + pro Favorit suchen + lokal testen~~ ✓ erledigt (2026-08-13)
 10. ~~GitHub-Secrets hinterlegen und Workflow live testen~~ ✓ erledigt (2026-08-13, Run erfolgreich, `gh` CLI ist jetzt lokal eingerichtet und angemeldet)
 11. ~~Echte Spielerdaten (Weltrangliste) recherchieren und einpflegen~~ ✓ erledigt (2026-08-13, PDC Order of Merit Top 30)
-12. **Offen:** Was soll für „Events" gelten — ein echtes, aktuell laufendes/anstehendes PDC-Turnier eintragen (Name, Termine, Format), oder erstmal leer lassen, bis das Team selbst Events pflegen kann? Betrifft auch Matches/Standings, die an ein Event hängen.
+12. ~~Echtes Event (New Zealand Darts Masters 2026) mit Erstrunden-Spielplan einpflegen~~ ✓ erledigt (2026-08-13)
+13. ~~Home-Screen: Badge/Datum/Uhrzeit bei „Nächstes Spiel" + klickbar, Event-Detail mit Termin/Ort/Format, News-Sektion auf Home~~ ✓ erledigt (2026-08-13)
+14. ~~Match-Agent für automatische Live-Spielstand-Updates~~ ✓ erledigt (2026-08-13, `scripts/match-agent/`, Cron alle 15 Min.)
 
 ## Mögliche Erweiterungen (kein Auftrag, nur Ideen für später)
 
-- Echte Event-/Match-Daten eintragen, sobald Punkt 12 geklärt ist
-- Turnierbaum-Ansicht (KO-System) für Events, die nicht nur Gruppenphase sind
+- **Turnierbaum-Datenmodell**: Der Match-Agent kann aktuell nur bestehende Matches aktualisieren, aber keine Folgerunden (Viertelfinale etc.) automatisch anlegen, da die Bracket-Struktur (wer spielt nach einem Sieg gegen wen) noch nicht modelliert ist. Für volle Turnierbaum-Automatisierung müsste das Datenmodell um Round/Bracket-Beziehungen erweitert werden.
+- Sobald das New Zealand Darts Masters vorbei ist: nächstes echtes Event (z.B. Australian Darts Masters, 21.–22.08.) nach demselben Muster wie `scripts/seed/seed-nz-masters-2026.mjs` einpflegen
 - 3-Dart-Average/Checkout-Quote/180er/High-Finish für die 20 Spieler nachrecherchieren, bei denen aktuell nur Rang+Land verifiziert sind (siehe `scripts/seed/seed.mjs`-Kommentar)
 - Push-Benachrichtigungen tatsächlich versenden (Firebase Cloud Messaging ist vorbereitet, aber noch nicht am Laufen)
 - Live-Highlight-Erkennung direkt aus eigenen Match-Daten statt nur externer Websuche
