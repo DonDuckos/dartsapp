@@ -1,0 +1,31 @@
+name: Darts Match Agent
+
+on:
+  schedule:
+    # Alle 15 Minuten. Das Skript selbst prüft zuerst billig, ob gerade ein
+    # Turnier im relevanten Zeitfenster ansteht, und beendet sich sofort,
+    # falls nicht — die meisten Läufe außerhalb eines Turniers kosten also
+    # keinen OpenRouter-Call.
+    - cron: "*/15 * * * *"
+  workflow_dispatch: {}
+
+jobs:
+  update-matches:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/match-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "24"
+
+      - run: npm ci
+
+      - run: node index.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          OPENROUTER_MODEL: ${{ vars.OPENROUTER_MODEL }}
