@@ -5,6 +5,7 @@ import '../../providers/favorites_provider.dart';
 import '../../providers/repository_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
+import '../../utils/stat_format.dart';
 import '../../widgets/favorite_diamond.dart';
 
 class PlayerDetailScreen extends ConsumerWidget {
@@ -78,10 +79,10 @@ class PlayerDetailScreen extends ConsumerWidget {
             crossAxisSpacing: 10,
             childAspectRatio: 2.1,
             children: [
-              _StatTile(label: '3-Dart-Average', value: player.stats.average3Dart.toStringAsFixed(1)),
-              _StatTile(label: 'Checkout-Quote', value: '${player.stats.checkoutPercentage.toStringAsFixed(1)}%'),
-              _StatTile(label: '180er', value: '${player.stats.count180s}'),
-              _StatTile(label: 'High Finish', value: '${player.stats.highFinish}'),
+              _StatTile(label: '3-Dart-Average', value: formatAverage(player.stats.average3Dart)),
+              _StatTile(label: 'Checkout-Quote', value: formatPercentage(player.stats.checkoutPercentage)),
+              _StatTile(label: '180er', value: formatCount(player.stats.count180s)),
+              _StatTile(label: 'High Finish', value: formatCount(player.stats.highFinish)),
             ],
           ),
         ],

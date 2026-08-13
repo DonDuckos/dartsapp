@@ -5,6 +5,7 @@ import '../../providers/favorites_provider.dart';
 import '../../providers/repository_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
+import '../../utils/stat_format.dart';
 import '../../widgets/favorite_diamond.dart';
 import '../player/player_detail_screen.dart';
 
@@ -90,7 +91,7 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                   trailing: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Text(player.stats.average3Dart.toStringAsFixed(1),
+                      Text(formatAverage(player.stats.average3Dart),
                           style: AppTypography.mono(size: 12, color: AppColors.inkMuted)),
                       FavoriteDiamond(
                         active: favorites.contains(player.id),

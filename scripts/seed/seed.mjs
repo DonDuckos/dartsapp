@@ -1,143 +1,92 @@
-// Einmalig ausführen, um Firestore mit den bisherigen Mock-Daten
-// (lib/data/fixtures.dart) zu befüllen, damit die App nach dem Umstieg auf
-// Firestore nicht leer ist. Gefahrlos mehrfach ausführbar (überschreibt die
-// gleichen Dokument-IDs).
+// Setzt Firestore auf einen sauberen Stand mit der echten PDC-Weltrangliste
+// (Order of Merit, Top 30, Stand siehe unten) zurück. Entfernt vorher alle
+// alten Platzhalter-/Demo-Daten (fiktive Spieler, Event, Matches, News), da
+// die auf erfundene Spieler-IDs verweisen und mit echten Spielern nicht mehr
+// zusammenpassen. Events/Matches/News bleiben danach leer, bis echte
+// Turnierdaten eingepflegt werden — die App zeigt dafür bewusst einen
+// "Gerade kein Event geplant"-Zustand statt erfundener Inhalte.
+//
+// Quellen (2026-08-13, siehe CLAUDE.md-Historie): PDC Order of Merit
+// (thedartscout.com / dartsnews.com) für Rang + Preisgeld-Reihenfolge,
+// mastercaller.com für Länder, dartsnews.com "Yearly Average Rankings" für
+// die 3-Dart-Averages, die tatsächlich verifiziert werden konnten (10 von
+// 30 Spielern — für den Rest ist average3Dart bewusst 0, kein Rateswert).
+// checkoutPercentage/count180s/highFinish sind für alle 30 noch 0 (nicht
+// recherchiert) — die App zeigt 0-Werte als "–" statt als falsche Zahl.
 //
 // Aufruf:
 //   FIREBASE_SERVICE_ACCOUNT_JSON="$(cat serviceAccountKey.json)" node seed.mjs
 
 import { cert, initializeApp } from "firebase-admin/app";
-import { FieldValue, getFirestore, Timestamp } from "firebase-admin/firestore";
+import { getFirestore } from "firebase-admin/firestore";
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
+const emptyStats = { average3Dart: 0, checkoutPercentage: 0, count180s: 0, highFinish: 0 };
+const withAverage = (avg) => ({ ...emptyStats, average3Dart: avg });
+
 const players = [
-  { id: "vandijk", name: "J. van Dijk", country: "NL", rankingPosition: 1, stats: { average3Dart: 98.4, checkoutPercentage: 44.1, count180s: 61, highFinish: 161 }, bio: "Amsterdam · Rechtshänder · Profi seit 2016" },
-  { id: "krueger", name: "M. Krüger", country: "DE", rankingPosition: 2, stats: { average3Dart: 96.9, checkoutPercentage: 41.8, count180s: 54, highFinish: 170 }, bio: "Köln · Rechtshänder · Profi seit 2018" },
-  { id: "petrov", name: "I. Petrov", country: "BG", rankingPosition: 3, stats: { average3Dart: 95.1, checkoutPercentage: 40.2, count180s: 49, highFinish: 156 } },
-  { id: "novak", name: "T. Novak", country: "SI", rankingPosition: 4, stats: { average3Dart: 93.7, checkoutPercentage: 39.6, count180s: 45, highFinish: 167 } },
-  { id: "fischer", name: "L. Fischer", country: "DE", rankingPosition: 5, stats: { average3Dart: 92.8, checkoutPercentage: 38.9, count180s: 42, highFinish: 148 }, bio: "Stuttgart · Linkshänder · Profi seit 2020" },
-  { id: "bakker", name: "S. Bakker", country: "NL", rankingPosition: 6, stats: { average3Dart: 91.6, checkoutPercentage: 38.1, count180s: 38, highFinish: 140 } },
-  { id: "keller", name: "D. Keller", country: "AT", rankingPosition: 7, stats: { average3Dart: 90.9, checkoutPercentage: 37.4, count180s: 36, highFinish: 132 } },
-  { id: "albrecht", name: "N. Albrecht", country: "DE", rankingPosition: 8, stats: { average3Dart: 90.2, checkoutPercentage: 36.8, count180s: 33, highFinish: 145 } },
+  { id: "luke-littler", name: "Luke Littler", country: "EN", rankingPosition: 1, stats: withAverage(101.86) },
+  { id: "gian-van-veen", name: "Gian van Veen", country: "NL", rankingPosition: 2, stats: emptyStats },
+  { id: "luke-humphries", name: "Luke Humphries", country: "EN", rankingPosition: 3, stats: withAverage(101.07) },
+  { id: "gerwyn-price", name: "Gerwyn Price", country: "WA", rankingPosition: 4, stats: withAverage(99.37) },
+  { id: "jonny-clayton", name: "Jonny Clayton", country: "WA", rankingPosition: 5, stats: withAverage(96.02) },
+  { id: "james-wade", name: "James Wade", country: "EN", rankingPosition: 6, stats: emptyStats },
+  { id: "michael-van-gerwen", name: "Michael van Gerwen", country: "NL", rankingPosition: 7, stats: withAverage(96.84) },
+  { id: "josh-rock", name: "Josh Rock", country: "NI", rankingPosition: 8, stats: emptyStats },
+  { id: "stephen-bunting", name: "Stephen Bunting", country: "EN", rankingPosition: 9, stats: emptyStats },
+  { id: "danny-noppert", name: "Danny Noppert", country: "NL", rankingPosition: 10, stats: emptyStats },
+  { id: "gary-anderson", name: "Gary Anderson", country: "SC", rankingPosition: 11, stats: withAverage(98.67) },
+  { id: "ryan-searle", name: "Ryan Searle", country: "EN", rankingPosition: 12, stats: emptyStats },
+  { id: "wessel-nijman", name: "Wessel Nijman", country: "NL", rankingPosition: 13, stats: withAverage(97.64) },
+  { id: "chris-dobey", name: "Chris Dobey", country: "EN", rankingPosition: 14, stats: withAverage(97.66) },
+  { id: "nathan-aspinall", name: "Nathan Aspinall", country: "EN", rankingPosition: 15, stats: emptyStats },
+  { id: "ross-smith", name: "Ross Smith", country: "EN", rankingPosition: 16, stats: emptyStats },
+  { id: "jermaine-wattimena", name: "Jermaine Wattimena", country: "NL", rankingPosition: 17, stats: emptyStats },
+  { id: "luke-woodhouse", name: "Luke Woodhouse", country: "EN", rankingPosition: 18, stats: emptyStats },
+  { id: "martin-schindler", name: "Martin Schindler", country: "DE", rankingPosition: 19, stats: emptyStats },
+  { id: "damon-heta", name: "Damon Heta", country: "AU", rankingPosition: 20, stats: emptyStats },
+  { id: "krzysztof-ratajski", name: "Krzysztof Ratajski", country: "PL", rankingPosition: 21, stats: emptyStats },
+  { id: "dirk-van-duijvenbode", name: "Dirk van Duijvenbode", country: "NL", rankingPosition: 22, stats: withAverage(96.05) },
+  { id: "rob-cross", name: "Rob Cross", country: "EN", rankingPosition: 23, stats: emptyStats },
+  { id: "mike-de-decker", name: "Mike De Decker", country: "BE", rankingPosition: 24, stats: emptyStats },
+  { id: "ryan-joyce", name: "Ryan Joyce", country: "EN", rankingPosition: 25, stats: emptyStats },
+  { id: "cameron-menzies", name: "Cameron Menzies", country: "SC", rankingPosition: 26, stats: emptyStats },
+  { id: "andrew-gilding", name: "Andrew Gilding", country: "EN", rankingPosition: 27, stats: emptyStats },
+  { id: "dave-chisnall", name: "Dave Chisnall", country: "EN", rankingPosition: 28, stats: emptyStats },
+  { id: "daryl-gurney", name: "Daryl Gurney", country: "NI", rankingPosition: 29, stats: emptyStats },
+  { id: "kevin-doets", name: "Kevin Doets", country: "NL", rankingPosition: 30, stats: withAverage(96.57) },
 ];
 
-const eventId = "cdt-2026";
-const event = {
-  name: "Continental Darts Trophy",
-  status: "live",
-  format: "roundRobin",
-  startDate: Timestamp.fromDate(new Date(Date.now() - 2 * 24 * 60 * 60 * 1000)),
-  endDate: Timestamp.fromDate(new Date(Date.now() + 1 * 24 * 60 * 60 * 1000)),
-  currentRound: "Halbfinale",
-};
-
-const standings = [
-  { playerId: "vandijk", position: 1, wins: 3, losses: 0, legsFor: 9, legsAgainst: 2, nextOpponentPlayerId: "petrov" },
-  { playerId: "krueger", position: 2, wins: 2, losses: 1, legsFor: 7, legsAgainst: 5, nextOpponentPlayerId: "novak" },
-  { playerId: "petrov", position: 3, wins: 1, losses: 2, legsFor: 5, legsAgainst: 6, nextOpponentPlayerId: "vandijk" },
-  { playerId: "bakker", position: 4, wins: 1, losses: 2, legsFor: 4, legsAgainst: 7, nextOpponentPlayerId: null },
-  { playerId: "novak", position: 5, wins: 0, losses: 3, legsFor: 3, legsAgainst: 9, nextOpponentPlayerId: "krueger" },
-];
-
-const matches = [
-  {
-    id: "m-live-1",
-    eventId,
-    player1Id: "krueger",
-    player2Id: "vandijk",
-    status: "live",
-    scheduledAt: Timestamp.fromDate(new Date(Date.now() - 40 * 60 * 1000)),
-    score: { sets: [2, 1], legs: [3, 2] },
-    throwingPlayerId: "krueger",
-  },
-  {
-    id: "m-next-1",
-    eventId,
-    player1Id: "fischer",
-    player2Id: "novak",
-    status: "scheduled",
-    scheduledAt: Timestamp.fromDate(new Date(Date.now() + 60 * 60 * 1000)),
-    score: null,
-    throwingPlayerId: null,
-  },
-];
-
-const news = [
-  {
-    id: "n1",
-    title: "Krüger erzwingt Decider – Halbfinale geht in den fünften Satz",
-    summary: "Im Halbfinale der Continental Darts Trophy gleicht Mika Krüger gegen Joran van Dijk zum 2:1 aus und erzwingt einen fünften Satz.",
-    sourceUrl: "https://example.org/news/kruger-decider",
-    sourceName: "Redaktion",
-    publishedAt: Timestamp.fromDate(new Date(Date.now() - 4 * 60 * 1000)),
-    relatedPlayerIds: ["krueger", "vandijk"],
-    isFlash: true,
-    imageUrl: null,
-  },
-  {
-    id: "n2",
-    title: "Van Dijk übernimmt Tabellenführung nach Gruppensieg",
-    summary: "Mit einem klaren Sieg in der Gruppenphase sichert sich Joran van Dijk Platz eins vor dem Halbfinale.",
-    sourceUrl: "https://example.org/news/vandijk-tabelle",
-    sourceName: "Redaktion",
-    publishedAt: Timestamp.fromDate(new Date(Date.now() - 38 * 60 * 1000)),
-    relatedPlayerIds: ["vandijk"],
-    isFlash: false,
-    imageUrl: null,
-  },
-  {
-    id: "n3",
-    title: "Neuer Checkout-Rekord: Novak trifft 167 aus dem Stand",
-    summary: "Toma Novak markiert mit einem 167er-Finish den höchsten Checkout des Turniers.",
-    sourceUrl: "https://example.org/news/novak-checkout",
-    sourceName: "Redaktion",
-    publishedAt: Timestamp.fromDate(new Date(Date.now() - 60 * 60 * 1000)),
-    relatedPlayerIds: ["novak"],
-    isFlash: false,
-    imageUrl: null,
-  },
-  {
-    id: "n4",
-    title: "Vorschau: Fischer gegen Albrecht im Viertelfinale",
-    summary: "Luca Fischer trifft im Viertelfinale auf Noah Albrecht — beide gewannen ihre Gruppen ungeschlagen.",
-    sourceUrl: "https://example.org/news/fischer-albrecht-vorschau",
-    sourceName: "Redaktion",
-    publishedAt: Timestamp.fromDate(new Date(Date.now() - 3 * 60 * 60 * 1000)),
-    relatedPlayerIds: ["fischer", "albrecht"],
-    isFlash: false,
-    imageUrl: null,
-  },
-];
+async function deleteCollection(ref) {
+  const snapshot = await ref.get();
+  if (snapshot.empty) return;
+  const batch = db.batch();
+  for (const doc of snapshot.docs) {
+    // Subcollections (z.B. events/{id}/standings) hängen nicht am Elterndokument
+    // und müssen einzeln geleert werden, bevor das Elterndokument gelöscht wird.
+    const standings = await doc.ref.collection("standings").get();
+    for (const s of standings.docs) batch.delete(s.ref);
+    batch.delete(doc.ref);
+  }
+  await batch.commit();
+}
 
 async function seed() {
-  const batch = db.batch();
+  await Promise.all(
+    ["players", "events", "matches", "news"].map((name) => deleteCollection(db.collection(name))),
+  );
 
+  const batch = db.batch();
   for (const { id, ...data } of players) {
     batch.set(db.collection("players").doc(id), data);
   }
-
-  batch.set(db.collection("events").doc(eventId), event);
-
-  for (const entry of standings) {
-    const { playerId, ...data } = entry;
-    batch.set(db.collection("events").doc(eventId).collection("standings").doc(playerId), data);
-  }
-
-  for (const { id, ...data } of matches) {
-    batch.set(db.collection("matches").doc(id), data);
-  }
-
-  for (const { id, ...data } of news) {
-    batch.set(db.collection("news").doc(id), data);
-  }
-
   await batch.commit();
-  console.log(
-    `Seed abgeschlossen: ${players.length} Spieler, 1 Event, ${standings.length} Standings, ${matches.length} Matches, ${news.length} News.`,
-  );
+
+  console.log(`Seed abgeschlossen: ${players.length} echte Spieler (Order of Merit Top 30) geschrieben.`);
+  console.log("Events/Matches/News sind jetzt leer — die App zeigt den Leer-Zustand, bis echte Turnierdaten folgen.");
 }
 
 seed().catch((error) => {
