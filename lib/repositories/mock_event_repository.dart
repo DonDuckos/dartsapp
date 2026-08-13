@@ -22,4 +22,10 @@ class MockEventRepository implements EventRepository {
   @override
   Stream<List<StandingEntry>> watchStandings(String eventId) =>
       Stream.value(List.unmodifiable(Fixtures.standings));
+
+  @override
+  Stream<List<DartsMatch>> watchMatches(String eventId) => Stream.value([
+        if (Fixtures.liveMatch.eventId == eventId) Fixtures.liveMatch,
+        if (Fixtures.nextMatch.eventId == eventId) Fixtures.nextMatch,
+      ]);
 }

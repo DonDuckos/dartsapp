@@ -31,6 +31,9 @@ class FirestoreEventRepository implements EventRepository {
         );
   }
 
+  @override
+  Stream<List<DartsMatch>> watchMatches(String eventId) => _watchMatchesForEvent(eventId);
+
   Stream<List<DartsMatch>> _watchMatchesForEvent(String eventId) {
     return _db.collection('matches').where('eventId', isEqualTo: eventId).snapshots().map(
           (snapshot) => snapshot.docs.map((doc) => DartsMatch.fromMap(doc.id, doc.data())).toList(),

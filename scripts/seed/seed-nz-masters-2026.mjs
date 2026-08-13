@@ -38,6 +38,7 @@ const event = {
   name: "New Zealand Darts Masters 2026",
   status: "upcoming",
   format: "knockout",
+  venue: "Spark Arena, Auckland",
   startDate: Timestamp.fromDate(new Date("2026-08-14T00:00:00Z")),
   endDate: Timestamp.fromDate(new Date("2026-08-15T23:59:00Z")),
   currentRound: null,

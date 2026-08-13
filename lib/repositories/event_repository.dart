@@ -15,4 +15,6 @@ abstract class EventRepository {
   Stream<DartsMatch?> watchNextMatch(String eventId);
 
   Stream<List<StandingEntry>> watchStandings(String eventId);
+
+  Stream<List<DartsMatch>> watchMatches(String eventId);
 }

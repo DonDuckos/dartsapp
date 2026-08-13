@@ -1,14 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import '../../models/news_item.dart';
 import '../../providers/favorites_provider.dart';
 import '../../providers/repository_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
-import '../../utils/relative_time.dart';
-import '../../widgets/favorite_diamond.dart';
-import 'news_detail_screen.dart';
+import '../../widgets/news_row.dart';
 
 class NewsScreen extends ConsumerStatefulWidget {
   const NewsScreen({super.key});
@@ -54,77 +51,20 @@ class _NewsScreenState extends ConsumerState<NewsScreen> {
             ),
           ),
           Expanded(
-            child: ListView.separated(
-              padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
-              itemCount: visible.length,
-              separatorBuilder: (_, _) => const Divider(height: 20, color: AppColors.hairline),
-              itemBuilder: (context, index) {
-                final item = visible[index];
-                final isFavoriteRelated = item.relatedPlayerIds.any(favorites.contains);
-                return _NewsRow(item: item, highlighted: isFavoriteRelated);
-              },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _NewsRow extends StatelessWidget {
-  const _NewsRow({required this.item, required this.highlighted});
-
-  final NewsItem item;
-  final bool highlighted;
-
-  @override
-  Widget build(BuildContext context) {
-    return InkWell(
-      onTap: () => Navigator.of(context, rootNavigator: true).push(
-        MaterialPageRoute(builder: (_) => NewsDetailScreen(item: item)),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 46,
-            height: 46,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(9),
-              gradient: RadialGradient(
-                center: const Alignment(-0.3, -0.4),
-                colors: [
-                  (item.isFlash ? AppColors.flash : AppColors.accent).withValues(alpha: 0.4),
-                  AppColors.surface2,
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (item.isFlash)
-                  Padding(
-                    padding: const EdgeInsets.only(bottom: 3),
-                    child: Text('EILMELDUNG',
-                        style: AppTypography.mono(size: 10, weight: FontWeight.w600, color: AppColors.flash)),
+            child: visible.isEmpty
+                ? Center(
+                    child: Text('Noch keine News.', style: AppTypography.body(size: 13, color: AppColors.inkFaint)),
+                  )
+                : ListView.separated(
+                    padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+                    itemCount: visible.length,
+                    separatorBuilder: (_, _) => const Divider(height: 20, color: AppColors.hairline),
+                    itemBuilder: (context, index) {
+                      final item = visible[index];
+                      final isFavoriteRelated = item.relatedPlayerIds.any(favorites.contains);
+                      return NewsRow(item: item, highlighted: isFavoriteRelated);
+                    },
                   ),
-                Text(item.title,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.body(size: 13, weight: item.isFlash ? FontWeight.w600 : FontWeight.w400)),
-                const SizedBox(height: 4),
-                Row(
-                  children: [
-                    if (highlighted) ...[const FavoriteDiamond(active: true, size: 5), const SizedBox(width: 5)],
-                    Text('${item.sourceName} · ${relativeTime(item.publishedAt)}',
-                        style: AppTypography.mono(size: 10, color: AppColors.inkFaint)),
-                  ],
-                ),
-              ],
-            ),
           ),
         ],
       ),

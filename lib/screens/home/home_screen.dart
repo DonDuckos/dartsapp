@@ -7,8 +7,10 @@ import '../../providers/favorites_provider.dart';
 import '../../providers/repository_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
+import '../../utils/event_format.dart';
 import '../../utils/relative_time.dart';
 import '../../widgets/live_badge.dart';
+import '../../widgets/news_row.dart';
 import '../../widgets/section_caption.dart';
 import '../event/event_detail_screen.dart';
 
@@ -61,7 +63,14 @@ class HomeScreen extends ConsumerWidget {
               ),
             )
           else if (event != null && nextMatch != null)
-            _HeroNextCard(eventName: event.name, match: nextMatch, playerById: playerById)
+            _HeroNextCard(
+              eventName: event.name,
+              match: nextMatch,
+              playerById: playerById,
+              onTap: () => Navigator.of(context, rootNavigator: true).push(
+                MaterialPageRoute(builder: (_) => EventDetailScreen(eventId: event.id)),
+              ),
+            )
           else if (event != null)
             _EventOnlyCard(eventName: event.name)
           else
@@ -88,6 +97,15 @@ class HomeScreen extends ConsumerWidget {
                   ),
               ],
             ),
+          if (news.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            const SectionCaption('Aktuelle News'),
+            const SizedBox(height: 8),
+            for (final (index, item) in news.take(3).indexed) ...[
+              if (index > 0) const Divider(height: 20, color: AppColors.hairline),
+              NewsRow(item: item, highlighted: item.relatedPlayerIds.any(favorites.contains)),
+            ],
+          ],
         ],
       ),
     );
@@ -249,32 +267,61 @@ class _HeroLiveCard extends StatelessWidget {
 }
 
 class _HeroNextCard extends StatelessWidget {
-  const _HeroNextCard({required this.eventName, required this.match, required this.playerById});
+  const _HeroNextCard({
+    required this.eventName,
+    required this.match,
+    required this.playerById,
+    required this.onTap,
+  });
 
   final String eventName;
   final DartsMatch match;
   final Map<String, Player> playerById;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     final p1 = playerById[match.player1Id];
     final p2 = playerById[match.player2Id];
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: AppColors.surface,
-        border: Border.all(color: AppColors.hairline),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(eventName, style: AppTypography.body(size: 12, color: AppColors.inkFaint)),
-          const SizedBox(height: 8),
-          Text('Nächstes Spiel', style: AppTypography.mono(size: 10, color: AppColors.inkFaint)),
-          const SizedBox(height: 6),
-          Text('${p1?.name} – ${p2?.name}', style: AppTypography.body(size: 16, weight: FontWeight.w600)),
-        ],
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          color: AppColors.surface,
+          border: Border.all(color: AppColors.hairline),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(999),
+                    border: Border.all(color: AppColors.accent.withValues(alpha: 0.5)),
+                  ),
+                  child: Text('NÄCHSTES SPIEL',
+                      style: AppTypography.mono(size: 10, weight: FontWeight.w600, color: AppColors.accent)),
+                ),
+                const Spacer(),
+                Flexible(
+                  child: Text(eventName,
+                      overflow: TextOverflow.ellipsis,
+                      style: AppTypography.body(size: 12, color: AppColors.inkFaint)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Text('${p1?.name} – ${p2?.name}', style: AppTypography.body(size: 16, weight: FontWeight.w600)),
+            const SizedBox(height: 4),
+            Text(formatMatchDateTime(match.scheduledAt),
+                style: AppTypography.mono(size: 11, color: AppColors.inkMuted)),
+          ],
+        ),
       ),
     );
   }

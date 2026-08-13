@@ -39,6 +39,10 @@ final standingsProvider = StreamProvider.family<List<StandingEntry>, String>(
   (ref, eventId) => ref.watch(eventRepositoryProvider).watchStandings(eventId),
 );
 
+final eventMatchesProvider = StreamProvider.family<List<DartsMatch>, String>(
+  (ref, eventId) => ref.watch(eventRepositoryProvider).watchMatches(eventId),
+);
+
 final newsProvider = StreamProvider<List<NewsItem>>(
   (ref) => ref.watch(newsRepositoryProvider).watchNews(),
 );

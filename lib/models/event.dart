@@ -13,6 +13,7 @@ class DartsEvent {
     required this.startDate,
     required this.endDate,
     this.currentRound,
+    this.venue,
   });
 
   final String id;
@@ -22,6 +23,7 @@ class DartsEvent {
   final DateTime startDate;
   final DateTime endDate;
   final String? currentRound;
+  final String? venue;
 
   factory DartsEvent.fromMap(String id, Map<String, dynamic> map) {
     return DartsEvent(
@@ -32,6 +34,7 @@ class DartsEvent {
       startDate: (map['startDate'] as Timestamp).toDate(),
       endDate: (map['endDate'] as Timestamp).toDate(),
       currentRound: map['currentRound'] as String?,
+      venue: map['venue'] as String?,
     );
   }
 
@@ -42,6 +45,7 @@ class DartsEvent {
         'startDate': Timestamp.fromDate(startDate),
         'endDate': Timestamp.fromDate(endDate),
         'currentRound': currentRound,
+        'venue': venue,
       };
 }
 
