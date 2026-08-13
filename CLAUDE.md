@@ -1,6 +1,6 @@
 # DartsApp — Projektauftrag für Claude Code
 
-> Status: **End-to-End fertig, News-Agent läuft live in GitHub Actions (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet und mit Startdaten befüllt. Google Sign-In läuft (SHA-1 registriert), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. Auf einem Windows-Emulator erfolgreich getestet. Der News-Agent (`scripts/news-agent/`) läuft über OpenRouter (Websuche via `:online`), sucht zusätzlich pro favorisiertem Spieler gezielt, GitHub Secrets (`FIREBASE_SERVICE_ACCOUNT_JSON`, `OPENROUTER_API_KEY`) sind gesetzt, ein manueller Workflow-Run war erfolgreich (0 Treffer, da Platzhalter-Spielernamen erfunden sind — mit echten Namen sollte das Ergebnisse liefern). Cron läuft ab jetzt automatisch alle 3 Std. Kein offener Punkt mehr aus der ursprünglichen Anforderung — nächste Schritte sind Erweiterungen/echte Daten, keine Grundfunktionen mehr.
+> Status: **Echte PDC-Weltrangliste live, News-Agent läuft in GitHub Actions (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet. Google Sign-In läuft (SHA-1 registriert), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. Auf einem Windows-Emulator erfolgreich getestet. Der News-Agent (`scripts/news-agent/`) läuft über OpenRouter (Websuche via `:online`), sucht zusätzlich pro favorisiertem Spieler gezielt, GitHub Secrets sind gesetzt, Cron läuft automatisch alle 3 Std. **`players`-Collection enthält jetzt die echte PDC Order of Merit Top 30** (`scripts/seed/seed.mjs`, recherchiert 2026-08-13, siehe Quellenangabe im Skript-Header) — `events`/`matches`/`news` sind bewusst leer, bis echte Turnierdaten feststehen (offene Frage an den Nutzer, siehe Nächste Schritte).
 
 ## Ziel & Kontext
 
@@ -140,10 +140,13 @@ Detail-Screens (per Push von obigen erreichbar, kein eigener Tab):
 8. ~~App auf echtem Gerät/Emulator testen~~ ✓ erledigt (2026-08-13, Windows-Emulator, siehe oben)
 9. ~~News-Agent auf OpenRouter umstellen + pro Favorit suchen + lokal testen~~ ✓ erledigt (2026-08-13)
 10. ~~GitHub-Secrets hinterlegen und Workflow live testen~~ ✓ erledigt (2026-08-13, Run erfolgreich, `gh` CLI ist jetzt lokal eingerichtet und angemeldet)
+11. ~~Echte Spielerdaten (Weltrangliste) recherchieren und einpflegen~~ ✓ erledigt (2026-08-13, PDC Order of Merit Top 30)
+12. **Offen:** Was soll für „Events" gelten — ein echtes, aktuell laufendes/anstehendes PDC-Turnier eintragen (Name, Termine, Format), oder erstmal leer lassen, bis das Team selbst Events pflegen kann? Betrifft auch Matches/Standings, die an ein Event hängen.
 
 ## Mögliche Erweiterungen (kein Auftrag, nur Ideen für später)
 
-- Echte Spieler-/Event-/Match-Daten statt Platzhalter eintragen (manuell oder eigenes Admin-Tool), damit der News-Agent tatsächlich Treffer liefert
+- Echte Event-/Match-Daten eintragen, sobald Punkt 12 geklärt ist
 - Turnierbaum-Ansicht (KO-System) für Events, die nicht nur Gruppenphase sind
+- 3-Dart-Average/Checkout-Quote/180er/High-Finish für die 20 Spieler nachrecherchieren, bei denen aktuell nur Rang+Land verifiziert sind (siehe `scripts/seed/seed.mjs`-Kommentar)
 - Push-Benachrichtigungen tatsächlich versenden (Firebase Cloud Messaging ist vorbereitet, aber noch nicht am Laufen)
 - Live-Highlight-Erkennung direkt aus eigenen Match-Daten statt nur externer Websuche
