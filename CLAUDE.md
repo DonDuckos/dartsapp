@@ -1,6 +1,6 @@
 # DartsApp — Projektauftrag für Claude Code
 
-> Status: **Auf GitHub (DonDuckos/dartsapp), News-Agent lokal verifiziert (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth ist eingerichtet und mit Startdaten befüllt. Google Sign-In läuft (SHA-1 registriert), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. Auf einem eingerichteten Windows-Emulator erfolgreich getestet — Home und Rangliste zeigen echte Firestore-Daten. Der News-Agent (`scripts/news-agent/`) läuft jetzt über OpenRouter statt direkt über Anthropic, sucht zusätzlich pro favorisiertem Spieler gezielt, und wurde lokal erfolgreich getestet (echte Websuche bestätigt). Noch offen: GitHub Secrets fürs Actions-Workflow eintragen, dann den Workflow einmal live auslösen.
+> Status: **End-to-End fertig, News-Agent läuft live in GitHub Actions (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet und mit Startdaten befüllt. Google Sign-In läuft (SHA-1 registriert), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. Auf einem Windows-Emulator erfolgreich getestet. Der News-Agent (`scripts/news-agent/`) läuft über OpenRouter (Websuche via `:online`), sucht zusätzlich pro favorisiertem Spieler gezielt, GitHub Secrets (`FIREBASE_SERVICE_ACCOUNT_JSON`, `OPENROUTER_API_KEY`) sind gesetzt, ein manueller Workflow-Run war erfolgreich (0 Treffer, da Platzhalter-Spielernamen erfunden sind — mit echten Namen sollte das Ergebnisse liefern). Cron läuft ab jetzt automatisch alle 3 Std. Kein offener Punkt mehr aus der ursprünglichen Anforderung — nächste Schritte sind Erweiterungen/echte Daten, keine Grundfunktionen mehr.
 
 ## Ziel & Kontext
 
@@ -139,4 +139,11 @@ Detail-Screens (per Push von obigen erreichbar, kein eigener Tab):
 7. ~~Google-Sign-In-UI bauen und Favoriten/Einstellungen an `users/{uid}` anbinden~~ ✓ erledigt (2026-08-13)
 8. ~~App auf echtem Gerät/Emulator testen~~ ✓ erledigt (2026-08-13, Windows-Emulator, siehe oben)
 9. ~~News-Agent auf OpenRouter umstellen + pro Favorit suchen + lokal testen~~ ✓ erledigt (2026-08-13)
-10. GitHub-Secrets `FIREBASE_SERVICE_ACCOUNT_JSON` und `OPENROUTER_API_KEY` im Repo https://github.com/DonDuckos/dartsapp hinterlegen (Settings → Secrets and variables → Actions), danach den News-Agent-Workflow einmal manuell auslösen (Actions-Tab → „Darts News Agent" → „Run workflow") und die `news`-Collection in Firestore prüfen
+10. ~~GitHub-Secrets hinterlegen und Workflow live testen~~ ✓ erledigt (2026-08-13, Run erfolgreich, `gh` CLI ist jetzt lokal eingerichtet und angemeldet)
+
+## Mögliche Erweiterungen (kein Auftrag, nur Ideen für später)
+
+- Echte Spieler-/Event-/Match-Daten statt Platzhalter eintragen (manuell oder eigenes Admin-Tool), damit der News-Agent tatsächlich Treffer liefert
+- Turnierbaum-Ansicht (KO-System) für Events, die nicht nur Gruppenphase sind
+- Push-Benachrichtigungen tatsächlich versenden (Firebase Cloud Messaging ist vorbereitet, aber noch nicht am Laufen)
+- Live-Highlight-Erkennung direkt aus eigenen Match-Daten statt nur externer Websuche
