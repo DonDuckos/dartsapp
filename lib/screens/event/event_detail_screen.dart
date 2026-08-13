@@ -145,7 +145,32 @@ class _MatchList extends StatelessWidget {
     }
 
     final sorted = [...matches]..sort((a, b) => a.scheduledAt.compareTo(b.scheduledAt));
+    final hasUpcoming = sorted.any((m) => m.status == MatchStatus.scheduled);
 
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (hasUpcoming) ...[
+          Text(
+            'Nur das erste Match hat eine bestätigte Startzeit — danach spielt die Sitzung der Reihe nach, spätere Zeiten sind grobe Schätzungen.',
+            style: AppTypography.body(size: 11, color: AppColors.inkFaint),
+          ),
+          const SizedBox(height: 10),
+        ],
+        Expanded(child: _MatchListView(sorted: sorted, playerById: playerById)),
+      ],
+    );
+  }
+}
+
+class _MatchListView extends StatelessWidget {
+  const _MatchListView({required this.sorted, required this.playerById});
+
+  final List<DartsMatch> sorted;
+  final Map<String, Player> playerById;
+
+  @override
+  Widget build(BuildContext context) {
     return ListView.separated(
       itemCount: sorted.length,
       separatorBuilder: (_, _) => const Divider(height: 20, color: AppColors.hairline),

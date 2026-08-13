@@ -55,7 +55,7 @@ class NewsRow extends StatelessWidget {
                 Row(
                   children: [
                     if (highlighted) ...[const FavoriteDiamond(active: true, size: 5), const SizedBox(width: 5)],
-                    Text('${item.sourceName} · ${relativeTime(item.publishedAt)}',
+                    Text('${item.sourceName} · ${newsDate(item.publishedAt)}',
                         style: AppTypography.mono(size: 10, color: AppColors.inkFaint)),
                   ],
                 ),

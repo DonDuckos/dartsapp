@@ -77,7 +77,7 @@ class HomeScreen extends ConsumerWidget {
             const _EmptyHero(),
           if (flash != null) ...[
             const SizedBox(height: 14),
-            _FlashBanner(headline: flash.title, time: relativeTime(flash.publishedAt)),
+            _FlashBanner(headline: flash.title, time: newsDate(flash.publishedAt)),
           ],
           const SizedBox(height: 20),
           const SectionCaption('Deine Favoriten'),

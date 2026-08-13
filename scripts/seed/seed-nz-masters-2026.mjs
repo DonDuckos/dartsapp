@@ -44,8 +44,13 @@ const event = {
   currentRound: null,
 };
 
-// 19:00 NZST (UTC+12, kein Sommerzeit-Versatz im August) = 07:00 UTC.
-const round1Start = Timestamp.fromDate(new Date("2026-08-14T07:00:00Z"));
+// 19:00 NZST (UTC+12, kein Sommerzeit-Versatz im August) = 07:00 UTC. Die PDC
+// kündigt keine Einzel-Anstoßzeiten pro Match an, nur den Sitzungsbeginn —
+// die Matches laufen der Reihe nach. 28 Min./Match ist eine grobe Schätzung
+// (typische Dauer eines Best-of-11 auf diesem Niveau) und KEIN offizieller
+// Wert; siehe Hinweis im Spielplan der App.
+const round1StartMs = new Date("2026-08-14T07:00:00Z").getTime();
+const MINUTES_PER_MATCH = 28;
 
 const matches = [
   { id: "nzdm2026-r1-1", player1Id: "gian-van-veen", player2Id: "jonny-tata" },
@@ -56,11 +61,11 @@ const matches = [
   { id: "nzdm2026-r1-6", player1Id: "damon-heta", player2Id: "ben-robb" },
   { id: "nzdm2026-r1-7", player1Id: "stephen-bunting", player2Id: "raymond-smith" },
   { id: "nzdm2026-r1-8", player1Id: "ross-smith", player2Id: "adam-leek" },
-].map((m) => ({
+].map((m, index) => ({
   ...m,
   eventId,
   status: "scheduled",
-  scheduledAt: round1Start,
+  scheduledAt: Timestamp.fromDate(new Date(round1StartMs + index * MINUTES_PER_MATCH * 60 * 1000)),
   score: null,
   throwingPlayerId: null,
 }));

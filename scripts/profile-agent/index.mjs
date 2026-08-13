@@ -117,6 +117,45 @@ async function fetchPlayerProfile(playerName) {
   return parseJsonObject(text);
 }
 
+function slugifyName(name) {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-");
+}
+
+// darts-nerd.com hat pro Spieler eine strukturierte Statistikseite mit
+// eingebettetem JSON-LD (FAQPage). Liefert average3Dart/checkoutPercentage/
+// count180s zuverlässig und kostenlos, KEIN Websuche-Raten nötig — daher
+// erste Anlaufstelle, bevor überhaupt ein OpenRouter-Call für Stats gemacht
+// wird. "highFinish" liefert die Seite NICHT mit (siehe unten), das bleibt
+// bei der Websuche.
+//
+// Wichtig: Die Seite hat selbst einen Bug/Platzhalter — "höchster Checkout"
+// stand beim Testen für JEDEN geprüften Spieler identisch auf 170, dem
+// theoretischen Maximum. Dieses Feld wird deshalb bewusst NICHT übernommen.
+async function fetchDartsNerdStats(playerName) {
+  const slug = slugifyName(playerName);
+  const response = await fetch(`https://www.darts-nerd.com/en/players/${slug}/stats`, {
+    headers: { "User-Agent": "DartsApp/1.0 (privates Hobby-Projekt, kein kommerzieller Einsatz)" },
+  });
+  if (!response.ok) return null;
+
+  const html = await response.text();
+
+  const avgMatch = html.match(/averages ([\d.]+) per leg/);
+  const checkoutMatch = html.match(/est de ([\d.]+)% sur les 12 derniers mois/);
+  const count180sMatch = html.match(/has hit ([\d,]+) 180s over the last 12 months/);
+
+  const result = {};
+  if (avgMatch) result.average3Dart = Number.parseFloat(avgMatch[1]);
+  if (checkoutMatch) result.checkoutPercentage = Number.parseFloat(checkoutMatch[1]);
+  if (count180sMatch) result.count180s = Number.parseInt(count180sMatch[1].replace(/,/g, ""), 10);
+
+  return Object.keys(result).length > 0 ? result : null;
+}
+
 async function fetchPlayerStats(playerName) {
   const prompt =
     `Suche die aktuellen PDC-Saison-2026-Statistiken des Profi-Dartspielers "${playerName}": ` +
@@ -197,17 +236,34 @@ async function processPlayers() {
     }
 
     if (needsStats) {
-      const result = await fetchPlayerStats(player.name);
-      for (const field of ["average3Dart", "checkoutPercentage", "count180s", "highFinish"]) {
-        const value = result?.[field];
-        if (typeof value !== "number" || stats[field]) continue;
-        if (!isPlausibleStat(field, value)) {
-          console.warn(`    ${player.name}: ${field}=${value} außerhalb Plausibilitätsgrenze — verworfen.`);
-          continue;
+      const applyStats = (result, sourceLabel) => {
+        if (!result) return;
+        for (const field of ["average3Dart", "checkoutPercentage", "count180s", "highFinish"]) {
+          const value = result[field];
+          if (typeof value !== "number" || stats[field] || updates[`stats.${field}`]) continue;
+          if (!isPlausibleStat(field, value)) {
+            console.warn(`    ${player.name}: ${field}=${value} (${sourceLabel}) außerhalb Plausibilitätsgrenze — verworfen.`);
+            continue;
+          }
+          updates[`stats.${field}`] = value;
         }
-        updates[`stats.${field}`] = value;
+      };
+
+      const dartsNerdResult = await fetchDartsNerdStats(player.name);
+      applyStats(dartsNerdResult, "darts-nerd.com");
+      if (dartsNerdResult) console.log(`    (darts-nerd.com hatte Daten für ${player.name})`);
+
+      // highFinish liefert darts-nerd.com nicht mit (siehe Kommentar oben),
+      // und für Spieler ohne darts-nerd-Profil (z.B. Oceanic-Qualifikanten)
+      // fehlt danach meist noch mehr — Websuche füllt nur die echten Lücken.
+      const stillMissing = ["average3Dart", "checkoutPercentage", "count180s", "highFinish"].some(
+        (field) => !stats[field] && !updates[`stats.${field}`],
+      );
+      if (stillMissing) {
+        const result = await fetchPlayerStats(player.name);
+        applyStats(result, "Websuche");
+        if (result?.source) console.log(`    (Websuche-Quelle für ${player.name}: ${result.source})`);
       }
-      if (result?.source) console.log(`    (Stats-Quelle für ${player.name}: ${result.source})`);
     }
 
     if (Object.keys(updates).length > 0) {
