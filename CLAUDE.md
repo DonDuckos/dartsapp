@@ -1,6 +1,13 @@
 # DartsApp — Projektauftrag für Claude Code
 
-> Status: **Voller Echtdaten-Betrieb inkl. Live-Update-Automatisierung (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet. Google Sign-In läuft, Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. `players`-Collection enthält die echte PDC Order of Merit Top 30 (`scripts/seed/seed.mjs`). `events`/`matches` enthalten das echte New Zealand Darts Masters 2026 (`scripts/seed/seed-nz-masters-2026.mjs`, 14.–15.08., Spark Arena Auckland, komplette Erstrunden-Paarung). Zwei Cron-Jobs laufen in GitHub Actions: **News-Agent** (`scripts/news-agent/`, alle 3 Std., OpenRouter-Websuche, allgemein + pro Favorit) und **Match-Agent** (`scripts/match-agent/`, alle 15 Min., hält Match-Status/Score aktuell und schaltet Events automatisch auf „live"). Home-Screen zeigt Badge/Datum/Uhrzeit bei „Nächstes Spiel" (klickbar → Event-Detail mit Termin/Ort/Format) sowie die 3 aktuellsten News. Bewusste Grenze: Der Match-Agent erzeugt keine Folgerunden-Matches (Viertelfinale etc.) — dafür fehlt noch ein Turnierbaum-Datenmodell.
+> Status: **Voller Echtdaten-Betrieb mit drei Agenten und angereicherten Profilen (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth eingerichtet. Google Sign-In läuft, Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. `players`-Collection enthält die echte PDC Order of Merit Top 30 (`scripts/seed/seed.mjs`) plus 8 Oceanic-Qualifikanten. `events`/`matches` enthalten das echte New Zealand Darts Masters 2026 (`scripts/seed/seed-nz-masters-2026.mjs`, 14.–15.08., Spark Arena Auckland, komplette Erstrunden-Paarung).
+>
+> **Drei Cron-Jobs in GitHub Actions**, alle über OpenRouter mit **Kimi K2** (`moonshotai/kimi-k2-0905`, ~5x günstiger als das vorherige Claude-Modell, passt zum 3–8€/Monat-Budget):
+> - **News-Agent** (`scripts/news-agent/`, alle 3 Std.): Websuche allgemein + pro favorisiertem Spieler, Zeitfenster 24 Std.
+> - **Match-Agent** (`scripts/match-agent/`, alle 15 Min.): hält Match-Status/Score aktuell, schaltet Events automatisch auf „live". Hat einen Plausibilitäts-Check (verwirft „live"/„finished", wenn der Ansetzungstermin noch >30 Min. in der Zukunft liegt) — beim Testen mit Kimi K2 einmal eine Modell-Halluzination abgefangen.
+> - **Profile-Agent** (`scripts/profile-agent/`, manuell + wöchentlich Mo. 6 Uhr): ergänzt Spieler-Vitas, Zitate (mit Quelle) und Fotos (ausschließlich Wikimedia Commons mit geprüfter Lizenz, keine KI-Einschätzung) sowie journalistische Location-Previews pro Event. Bereits einmal für alle 38 Spieler + 1 Event gelaufen.
+>
+> Home-Screen zeigt Badge/Datum/Uhrzeit (korrekte Gerätezeitzone) bei „Nächstes Spiel" (klickbar → Event-Detail mit Termin/Ort/Format/Location-Preview/Spielplan) sowie die 3 aktuellsten News. Spieler-Detail zeigt Foto+Attribution, Vita und Zitat; Rangliste zeigt Foto-Avatare. Bewusste Grenze: Der Match-Agent erzeugt keine Folgerunden-Matches (Viertelfinale etc.) — dafür fehlt noch ein Turnierbaum-Datenmodell.
 
 ## Ziel & Kontext
 
@@ -144,11 +151,15 @@ Detail-Screens (per Push von obigen erreichbar, kein eigener Tab):
 12. ~~Echtes Event (New Zealand Darts Masters 2026) mit Erstrunden-Spielplan einpflegen~~ ✓ erledigt (2026-08-13)
 13. ~~Home-Screen: Badge/Datum/Uhrzeit bei „Nächstes Spiel" + klickbar, Event-Detail mit Termin/Ort/Format, News-Sektion auf Home~~ ✓ erledigt (2026-08-13)
 14. ~~Match-Agent für automatische Live-Spielstand-Updates~~ ✓ erledigt (2026-08-13, `scripts/match-agent/`, Cron alle 15 Min.)
+15. ~~Zeitzonen-Fix (Home/Event-Detail zeigen jetzt korrekte Gerätezeitzone)~~ ✓ erledigt (2026-08-13 — war nur eine Emulator-Einstellung, kein Code-Bug)
+16. ~~Agenten auf OpenRouter/Kimi K2 statt Claude umstellen~~ ✓ erledigt (2026-08-13, `moonshotai/kimi-k2-0905`, ~5x günstiger)
+17. ~~Profile-Agent: Spieler-Vitas/Zitate/Fotos (Wikimedia) + Event-Location-Reporting~~ ✓ erledigt (2026-08-13, `scripts/profile-agent/`)
 
 ## Mögliche Erweiterungen (kein Auftrag, nur Ideen für später)
 
 - **Turnierbaum-Datenmodell**: Der Match-Agent kann aktuell nur bestehende Matches aktualisieren, aber keine Folgerunden (Viertelfinale etc.) automatisch anlegen, da die Bracket-Struktur (wer spielt nach einem Sieg gegen wen) noch nicht modelliert ist. Für volle Turnierbaum-Automatisierung müsste das Datenmodell um Round/Bracket-Beziehungen erweitert werden.
 - Sobald das New Zealand Darts Masters vorbei ist: nächstes echtes Event (z.B. Australian Darts Masters, 21.–22.08.) nach demselben Muster wie `scripts/seed/seed-nz-masters-2026.mjs` einpflegen
-- 3-Dart-Average/Checkout-Quote/180er/High-Finish für die 20 Spieler nachrecherchieren, bei denen aktuell nur Rang+Land verifiziert sind (siehe `scripts/seed/seed.mjs`-Kommentar)
+- Checkout-Quote/180er/High-Finish (Live-Statistiken, nicht Bio-Daten) sind weiterhin für alle Spieler unbefüllt — bräuchten eine echte Statistik-Quelle, nicht nur Websuche
 - Push-Benachrichtigungen tatsächlich versenden (Firebase Cloud Messaging ist vorbereitet, aber noch nicht am Laufen)
 - Live-Highlight-Erkennung direkt aus eigenen Match-Daten statt nur externer Websuche
+- Journalistische "Warum spielt X nicht mit"-Storys: aktuell deckt die allgemeine News-Suche das teilweise ab, ein gezielterer Prompt könnte das noch verlässlicher machen
