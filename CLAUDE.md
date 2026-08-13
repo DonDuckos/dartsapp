@@ -1,6 +1,6 @@
 # DartsApp — Projektauftrag für Claude Code
 
-> Status: **Firebase inkl. echtem Google-Login fertig verdrahtet (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth ist eingerichtet und mit Startdaten befüllt. Google Sign-In ist im Profil-Screen implementiert (SHA-1 registriert, `google-services.json` aktuell), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}` in Firestore. `flutter analyze`/`flutter test`/`flutter build apk --debug` laufen fehlerfrei durch. Noch offen: News-Agent-Workflow braucht noch die GitHub-Secrets, und ein echter Geräte-/Emulator-Test steht noch aus.
+> Status: **Auf GitHub (DonDuckos/dartsapp), News-Agent lokal verifiziert (2026-08-13).** Firebase-Projekt „Dartz" (`dartz-39d69`, Spark-Plan) mit Firestore, Sicherheitsregeln und Google-Auth ist eingerichtet und mit Startdaten befüllt. Google Sign-In läuft (SHA-1 registriert), Favoriten/Benachrichtigungen synchronisieren live mit `users/{uid}`. Auf einem eingerichteten Windows-Emulator erfolgreich getestet — Home und Rangliste zeigen echte Firestore-Daten. Der News-Agent (`scripts/news-agent/`) läuft jetzt über OpenRouter statt direkt über Anthropic, sucht zusätzlich pro favorisiertem Spieler gezielt, und wurde lokal erfolgreich getestet (echte Websuche bestätigt). Noch offen: GitHub Secrets fürs Actions-Workflow eintragen, dann den Workflow einmal live auslösen.
 
 ## Ziel & Kontext
 
@@ -137,5 +137,6 @@ Detail-Screens (per Push von obigen erreichbar, kein eigener Tab):
 5. ~~Mock-Repositories durch Firestore-Implementierungen ersetzen~~ ✓ erledigt (2026-08-13)
 6. ~~Firestore mit Startdaten befüllen~~ ✓ erledigt (2026-08-13, `scripts/seed/seed.mjs`)
 7. ~~Google-Sign-In-UI bauen und Favoriten/Einstellungen an `users/{uid}` anbinden~~ ✓ erledigt (2026-08-13)
-8. GitHub-Secrets `FIREBASE_SERVICE_ACCOUNT_JSON` (Inhalt von `scripts/seed/serviceAccountKey.json`) und `ANTHROPIC_API_KEY` im Repo hinterlegen, News-Agent-Workflow (`.github/workflows/news-agent.yml`) einmal manuell auslösen und prüfen
-9. App auf echtem Android-Gerät oder Emulator testen (`flutter run`) — in dieser Sandbox nicht möglich, da kein Gerät/Emulator angeschlossen ist
+8. ~~App auf echtem Gerät/Emulator testen~~ ✓ erledigt (2026-08-13, Windows-Emulator, siehe oben)
+9. ~~News-Agent auf OpenRouter umstellen + pro Favorit suchen + lokal testen~~ ✓ erledigt (2026-08-13)
+10. GitHub-Secrets `FIREBASE_SERVICE_ACCOUNT_JSON` und `OPENROUTER_API_KEY` im Repo https://github.com/DonDuckos/dartsapp hinterlegen (Settings → Secrets and variables → Actions), danach den News-Agent-Workflow einmal manuell auslösen (Actions-Tab → „Darts News Agent" → „Run workflow") und die `news`-Collection in Firestore prüfen
