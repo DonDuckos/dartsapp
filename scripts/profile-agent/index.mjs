@@ -117,6 +117,40 @@ async function fetchPlayerProfile(playerName) {
   return parseJsonObject(text);
 }
 
+async function fetchPlayerStats(playerName) {
+  const prompt =
+    `Suche die aktuellen PDC-Saison-2026-Statistiken des Profi-Dartspielers "${playerName}": ` +
+    "3-Dart-Average (Saison), Checkout-Quote in Prozent, Anzahl 180er (Saison), höchstes Finish " +
+    "(Checkout) der Saison. Nutze verlässliche Quellen wie offizielle PDC-Statistiken, " +
+    'thestatsdontlie.com oder dartsworld.com. Antworte NUR mit JSON: {"average3Dart": Zahl oder null, ' +
+    '"checkoutPercentage": Zahl oder null, "count180s": Zahl oder null, "highFinish": Zahl oder null, ' +
+    '"source": "kurze Quellenangabe"}. Bei Unsicherheit lieber null statt zu raten — diese Zahlen sind ' +
+    "Recherche-Bestwerte, keine garantiert exakten Werte, da Darts-Statistiken nicht einheitlich " +
+    "zentral erfasst werden. WICHTIG zu highFinish: 170 ist das theoretisch höchstmögliche Finish " +
+    "(T20-T20-Bull) — nenne 170 NUR, wenn du eine konkrete Quelle für genau DIESEN Spieler mit genau " +
+    "diesem Wert gefunden hast, niemals als Schätzung oder Platzhalter. Im Zweifel null.";
+
+  const text = await callOpenRouter(prompt);
+  return parseJsonObject(text);
+}
+
+// Grobe Plausibilitätsgrenzen für Saison-Statistiken im Profi-Darts — fängt
+// Modell-Hallizinationen ab (z.B. wurde beim ersten Lauf "highFinish: 170",
+// das theoretische Maximum, auffällig oft ohne echte Quelle als Platzhalter
+// genannt, und einzelne Checkout-Quoten waren für einen Saisondurchschnitt
+// unrealistisch, siehe git-Historie).
+const STATS_BOUNDS = {
+  average3Dart: [70, 112],
+  checkoutPercentage: [20, 55],
+  count180s: [0, 1500],
+  highFinish: [100, 170],
+};
+
+function isPlausibleStat(field, value) {
+  const [min, max] = STATS_BOUNDS[field];
+  return value >= min && value <= max;
+}
+
 async function fetchEventPreview(event) {
   const locationHint = event.venue ? ` in ${event.venue}` : "";
   const prompt =
@@ -138,7 +172,10 @@ async function processPlayers() {
     const player = doc.data();
     const needsProfile = !player.bio && !player.quote;
     const needsPhoto = !player.photoUrl;
-    if (!needsProfile && !needsPhoto) continue;
+    const stats = player.stats ?? {};
+    const needsStats =
+      !stats.average3Dart || !stats.checkoutPercentage || !stats.count180s || !stats.highFinish;
+    if (!needsProfile && !needsPhoto && !needsStats) continue;
 
     const updates = {};
 
@@ -157,6 +194,20 @@ async function processPlayers() {
         updates.photoUrl = photo.url;
         updates.photoAttribution = photo.attribution;
       }
+    }
+
+    if (needsStats) {
+      const result = await fetchPlayerStats(player.name);
+      for (const field of ["average3Dart", "checkoutPercentage", "count180s", "highFinish"]) {
+        const value = result?.[field];
+        if (typeof value !== "number" || stats[field]) continue;
+        if (!isPlausibleStat(field, value)) {
+          console.warn(`    ${player.name}: ${field}=${value} außerhalb Plausibilitätsgrenze — verworfen.`);
+          continue;
+        }
+        updates[`stats.${field}`] = value;
+      }
+      if (result?.source) console.log(`    (Stats-Quelle für ${player.name}: ${result.source})`);
     }
 
     if (Object.keys(updates).length > 0) {

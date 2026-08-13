@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/stat_format.dart';
 import '../../widgets/favorite_diamond.dart';
+import '../../widgets/player_avatar.dart';
 import '../player/player_detail_screen.dart';
 
 class RankingScreen extends ConsumerStatefulWidget {
@@ -88,21 +89,9 @@ class _RankingScreenState extends ConsumerState<RankingScreen> {
                   ),
                   title: Row(
                     children: [
-                      Container(
-                        width: 22,
-                        height: 22,
-                        margin: const EdgeInsets.only(right: 8),
-                        clipBehavior: Clip.antiAlias,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: player.photoUrl == null
-                              ? const LinearGradient(colors: [AppColors.accent, Color(0xFF7A5A1E)])
-                              : null,
-                          color: AppColors.surface2,
-                        ),
-                        child: player.photoUrl != null
-                            ? Image.network(player.photoUrl!, fit: BoxFit.cover)
-                            : null,
+                      Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: PlayerAvatar(photoUrl: player.photoUrl, size: 22),
                       ),
                       Text(player.name, style: AppTypography.body(size: 14)),
                     ],

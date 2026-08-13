@@ -7,6 +7,7 @@ import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
 import '../../utils/stat_format.dart';
 import '../../widgets/favorite_diamond.dart';
+import '../../widgets/player_avatar.dart';
 
 class PlayerDetailScreen extends ConsumerWidget {
   const PlayerDetailScreen({super.key, required this.playerId});
@@ -45,20 +46,7 @@ class PlayerDetailScreen extends ConsumerWidget {
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: 56,
-                height: 56,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: player.photoUrl == null
-                      ? const LinearGradient(colors: [AppColors.accent, Color(0xFF7A5A1E)])
-                      : null,
-                ),
-                child: player.photoUrl != null
-                    ? Image.network(player.photoUrl!, fit: BoxFit.cover)
-                    : null,
-              ),
+              PlayerAvatar(photoUrl: player.photoUrl, size: 56),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
