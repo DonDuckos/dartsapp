@@ -1,0 +1,27 @@
+name: Darts News Agent
+
+on:
+  schedule:
+    # Alle 3 Stunden. Cron läuft in UTC.
+    - cron: "0 */3 * * *"
+  workflow_dispatch: {}
+
+jobs:
+  fetch-and-summarize:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/news-agent
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - run: npm ci
+
+      - run: node index.mjs
+        env:
+          FIREBASE_SERVICE_ACCOUNT_JSON: ${{ secrets.FIREBASE_SERVICE_ACCOUNT_JSON }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}

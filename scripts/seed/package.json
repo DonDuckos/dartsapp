@@ -1,0 +1,11 @@
+{
+  "name": "dartsapp-seed",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Einmaliges Skript, um Firestore mit den bisherigen Platzhalterdaten (Spieler, Event, Standings, Matches) zu befüllen.",
+  "main": "seed.mjs",
+  "dependencies": {
+    "firebase-admin": "^12.6.0"
+  }
+}
