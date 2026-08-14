@@ -97,6 +97,18 @@ export function bzzoiroToUpdate(bMatch, liveMatch, swapped) {
     legs = [last.player1_legs, last.player2_legs];
   }
 
+  // Ein laufendes Match hat immer einen Spielstand. Wenn eines der beiden
+  // Felder (noch) nicht ermittelt werden konnte — z.B. erstes Set noch ohne
+  // abgeschlossenes Leg, oder das Match fehlt gerade in der Live-Liste —
+  // ist 0 der korrekte Wert für DIESES Feld. Vorher wurde die komplette
+  // Aktualisierung verworfen, wenn nur eines von beiden fehlte, wodurch ein
+  // bekannter Wert (z.B. Legs 5:0) verlorenging, nur weil Sets (noch 0:0)
+  // nicht separat gemeldet war.
+  if (bMatch.status === "live") {
+    sets ??= [0, 0];
+    legs ??= [0, 0];
+  }
+
   if (swapped) {
     if (sets) sets = [sets[1], sets[0]];
     if (legs) legs = [legs[1], legs[0]];

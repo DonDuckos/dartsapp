@@ -61,6 +61,29 @@ const wadeUpdate = bzzoiroToUpdate(foundWade.bMatch, foundWade.liveMatch, foundW
 assert.deepEqual(wadeUpdate, { status: "live", sets: [1, 2], legs: [1, 3] });
 console.log("Vertauschte bzzoiro-Reihenfolge wird korrekt zurückgedreht (Sets UND Legs).");
 
+// Regressionstest für den vom Nutzer gemeldeten Bug: Match ist laut bzzoiro
+// "live" mit Legs 5:0 im laufenden ersten Set, aber player1_sets/
+// player2_sets sind noch null (kein Set abgeschlossen) UND das Match wurde
+// nicht in der Live-Liste gefunden (z.B. Name-Mismatch bei diesem Aufruf) —
+// die alte Fassung verwarf dadurch das komplette Update.
+const liveNoSetsYet = bzzoiroToUpdate(
+  { status: "live", player1_sets: null, player2_sets: null, sets_detail: null },
+  undefined,
+  false,
+);
+assert.deepEqual(liveNoSetsYet, { status: "live", sets: [0, 0], legs: [0, 0] });
+console.log("Live-Match ohne bekannte Sets/Legs bekommt 0:0 statt verworfen zu werden.");
+
+// Sets bekannt (0:0, noch kein Set gewonnen), Legs bekannt aus Live-Detail —
+// beide Werte müssen erhalten bleiben, nicht durch den 0:0-Fallback ersetzt.
+const liveWithLegs = bzzoiroToUpdate(
+  { status: "live", player1_sets: 0, player2_sets: 0, sets_detail: null },
+  { player1_legs: 5, player2_legs: 0, current_set: 1 },
+  false,
+);
+assert.deepEqual(liveWithLegs, { status: "live", sets: [0, 0], legs: [5, 0] });
+console.log("Bekannte Legs (5:0) im laufenden ersten Set werden korrekt übernommen.");
+
 // Live-Legs werden bevorzugt vor sets_detail, wenn beide vorhanden sind.
 const bMatchLive = {
   status: "live",

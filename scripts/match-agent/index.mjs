@@ -176,6 +176,13 @@ async function processEvent(event, playerNameById) {
         update = bzzoiroToUpdate(found.bMatch, found.liveMatch, found.swapped);
         source = "bzzoiro";
         matchDate = found.bMatch.match_date ? new Date(found.bMatch.match_date) : null;
+        if (found.bMatch.status === "live") {
+          console.log(
+            `  [debug] ${label}: bMatch.sets=${found.bMatch.player1_sets}:${found.bMatch.player2_sets}, ` +
+              `sets_detail=${JSON.stringify(found.bMatch.sets_detail)}, ` +
+              `liveMatch=${found.liveMatch ? `${found.liveMatch.player1_legs}:${found.liveMatch.player2_legs} (Set ${found.liveMatch.current_set})` : "nicht in /matches/live/ gefunden"}`,
+          );
+        }
       }
     }
 
