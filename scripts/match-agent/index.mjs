@@ -193,6 +193,12 @@ async function processEvent(event, playerNameById) {
     if (update.status !== match.status) fields.status = update.status;
     if (Array.isArray(update.sets) && Array.isArray(update.legs)) {
       fields.score = { sets: update.sets, legs: update.legs };
+    } else if (update.status === "live" && match.score == null) {
+      // Ein Match kann laut Quelle schon "live" sein, bevor Sets/Legs
+      // gemeldet werden (z.B. direkt nach Anwurf) — 0:0 ist der korrekte
+      // Wert in dem Moment, kein fehlender Zustand. Verhindert außerdem,
+      // dass die UI mit score == null bei status == "live" umgehen muss.
+      fields.score = { sets: [0, 0], legs: [0, 0] };
     }
     // bzzoiro kennt die echte Ansetzungszeit — unsere eigene ist nur eine
     // Schätzung (siehe seed-nz-masters-2026.mjs). Korrigieren, damit

@@ -180,7 +180,10 @@ class _HeroLiveCard extends StatelessWidget {
     final p2 = playerById[match.player2Id];
     final next1 = nextMatch == null ? null : playerById[nextMatch!.player1Id];
     final next2 = nextMatch == null ? null : playerById[nextMatch!.player2Id];
-    final score = match.score!;
+    // Ein Match kann "live" sein, bevor die Datenquelle schon Sets/Legs
+    // meldet (z.B. direkt nach Anwurf) — 0:0 ist in dem Fall der korrekte
+    // Anzeigewert, kein fehlender Zustand.
+    final score = match.score ?? const MatchScore(sets: (0, 0), legs: (0, 0));
 
     return InkWell(
       onTap: onTap,
