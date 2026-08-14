@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Läuft alle 15 Min. per GitHub Actions Cron, hält Status/Spielstand laufender Turniere über Websuche (OpenRouter) aktuell.",
+  "description": "Läuft alle 15 Min. per GitHub Actions Cron, hält Status/Spielstand laufender Turniere über die bzzoiro-Darts-API aktuell (Fallback: Websuche via OpenRouter).",
   "main": "index.mjs",
   "dependencies": {
     "firebase-admin": "^12.6.0"

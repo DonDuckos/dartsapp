@@ -1,28 +1,54 @@
 // Läuft per GitHub Actions Cron alle 15 Min. (siehe .github/workflows/match-agent.yml).
 // Hält während eines laufenden/anstehenden Turniers Status und Spielstand der
-// bereits in Firestore angelegten Matches über Websuche (OpenRouter) aktuell.
+// bereits in Firestore angelegten Matches aktuell.
+//
+// Primärquelle: die bezahlte bzzoiro-Darts-API (strukturierte Echtzeitdaten,
+// 5 $/Monat, siehe CLAUDE.md) — liefert echte Status/Sets/Legs statt einer
+// LLM-Interpretation von Websuche-Treffern. Fällt nur für Matches, die dort
+// nicht gefunden werden (z.B. API-Ausfall, kein BZZOIRO_API_KEY gesetzt, oder
+// ein Spieler/Turnier, das bzzoiro nicht abdeckt), auf die bisherige
+// OpenRouter-Websuche pro Match zurück.
+//
+// Wichtig: Wir fragen bzzoiro NICHT nach unserer eigenen (nur geschätzten)
+// Ansetzungsreihenfolge, sondern nach allen Matches im Datumsfenster des
+// Events und matchen sie über die Spielernamen zu unseren Firestore-Docs.
+// Grund: Die reale Spielreihenfolge einer Session ist nie offiziell bekannt
+// (siehe seed-nz-masters-2026.mjs) — unsere geschätzte Reihenfolge kann von
+// der echten abweichen, das darf aber nicht dazu führen, dass wir ein Match
+// fälschlich für "noch nicht dran" halten.
 //
 // Bewusste Grenze: Das Skript aktualisiert nur vorhandene Match-Dokumente
 // (Status/Score) und schaltet event.status von "upcoming" auf "live", sobald
-// ein Match läuft. Es erzeugt KEINE neuen Matches für Folgerunden (Viertel-/
-// Halbfinale/Finale) — dafür bräuchte es das komplette Turnierbaum-Schema,
-// das noch nicht modelliert ist (siehe CLAUDE.md). Folgerunden müssen also
-// weiterhin manuell per Skript ergänzt werden, sobald die Paarungen feststehen.
+// ein Match nicht mehr "scheduled" ist (auch direkt "finished" — bei der
+// 15-Minuten-Taktung kann ein schnelles Match komplett dazwischen
+// durchlaufen, ohne je als "live" beobachtet zu werden). Es erzeugt KEINE
+// neuen Matches für Folgerunden (Viertel-/Halbfinale/Finale) — dafür bräuchte
+// es das komplette Turnierbaum-Schema, das noch nicht modelliert ist.
 
 import { cert, initializeApp } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
+import { bzzoiroToUpdate, findBzzoiroMatch, loadBzzoiroData } from "./bzzoiro.mjs";
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
 initializeApp({ credential: cert(serviceAccount) });
 const db = getFirestore();
 
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "moonshotai/kimi-k2-0905";
+const BZZOIRO_API_KEY = process.env.BZZOIRO_API_KEY;
 
 // Zeitfenster um Start/Ende eines Events, in dem das Skript überhaupt aktiv
 // wird — hält die meisten der alle 15 Min. laufenden Aufrufe billig (kein
 // API-Call), wenn gerade kein Turnier ansteht.
 const PRE_WINDOW_MS = 2 * 60 * 60 * 1000;
 const POST_WINDOW_MS = 12 * 60 * 60 * 1000;
+
+// Plausibilitäts-Check: ein Match kann nicht "live" oder "finished" sein,
+// solange sein (von uns geschätzter) Ansetzungstermin noch deutlich in der
+// Zukunft liegt — fängt sowohl Modell-Halluzinationen als auch fehlerhafte
+// Namens-Zuordnungen bei bzzoiro ab.
+const EARLY_START_TOLERANCE_MS = 30 * 60 * 1000;
+
+// --- OpenRouter (Fallback-Quelle) ---
 
 async function callOpenRouter(prompt) {
   const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
@@ -69,6 +95,20 @@ function parseJsonObject(text) {
   return null;
 }
 
+async function fetchMatchUpdateViaOpenRouter({ eventName, player1Name, player2Name }) {
+  const prompt =
+    `Suche den aktuellen Status des Darts-Erstrunden-/K.o.-Matches "${player1Name}" gegen ` +
+    `"${player2Name}" beim Turnier "${eventName}". Antworte ausschließlich mit einem JSON-Objekt: ` +
+    `{"status": "scheduled" | "live" | "finished", "sets": [Zahl für ${player1Name}, Zahl für ${player2Name}] oder null, ` +
+    `"legs": [Zahl für ${player1Name}, Zahl für ${player2Name}] oder null}. ` +
+    `"scheduled", wenn das Match noch nicht begonnen hat. Kein Text außerhalb des JSON-Objekts.`;
+
+  const text = await callOpenRouter(prompt);
+  return parseJsonObject(text);
+}
+
+// --- Kern ---
+
 async function findRelevantEvents() {
   const now = Date.now();
   const snapshot = await db.collection("events").where("status", "in", ["upcoming", "live"]).get();
@@ -81,16 +121,16 @@ async function findRelevantEvents() {
     });
 }
 
-async function fetchMatchUpdate({ eventName, player1Name, player2Name }) {
-  const prompt =
-    `Suche den aktuellen Status des Darts-Erstrunden-/K.o.-Matches "${player1Name}" gegen ` +
-    `"${player2Name}" beim Turnier "${eventName}". Antworte ausschließlich mit einem JSON-Objekt: ` +
-    `{"status": "scheduled" | "live" | "finished", "sets": [Zahl für ${player1Name}, Zahl für ${player2Name}] oder null, ` +
-    `"legs": [Zahl für ${player1Name}, Zahl für ${player2Name}] oder null}. ` +
-    `"scheduled", wenn das Match noch nicht begonnen hat. Kein Text außerhalb des JSON-Objekts.`;
-
-  const text = await callOpenRouter(prompt);
-  return parseJsonObject(text);
+function passesPlausibilityGuard(match, update, label) {
+  const scheduledAtMs = match.scheduledAt.toDate().getTime();
+  if (update.status !== "scheduled" && scheduledAtMs - Date.now() > EARLY_START_TOLERANCE_MS) {
+    console.warn(
+      `  ${label}: Update meldet "${update.status}", Match beginnt aber erst ` +
+        `${match.scheduledAt.toDate().toISOString()} — als unplausibel verworfen.`,
+    );
+    return false;
+  }
+  return true;
 }
 
 async function processEvent(event, playerNameById) {
@@ -102,31 +142,44 @@ async function processEvent(event, playerNameById) {
     return;
   }
 
-  let anyLive = false;
+  let bzzoiroData = null;
+  if (BZZOIRO_API_KEY) {
+    try {
+      bzzoiroData = await loadBzzoiroData(event);
+    } catch (error) {
+      console.warn(`  bzzoiro-Abfrage fehlgeschlagen, falle komplett auf Websuche zurück: ${error.message}`);
+    }
+  }
+
+  let anyStarted = false;
   let updated = 0;
 
   for (const doc of pendingMatches) {
     const match = doc.data();
     const player1Name = playerNameById.get(match.player1Id) ?? match.player1Id;
     const player2Name = playerNameById.get(match.player2Id) ?? match.player2Id;
+    const label = `${player1Name} vs ${player2Name}`;
 
-    const update = await fetchMatchUpdate({ eventName: event.name, player1Name, player2Name });
-    if (!update || !["scheduled", "live", "finished"].includes(update.status)) continue;
+    let update = null;
+    let source = null;
 
-    // Plausibilitäts-Check: ein Match kann nicht "live" oder "finished" sein,
-    // solange sein Ansetzungstermin noch deutlich in der Zukunft liegt — fängt
-    // Modell-Halluzinationen ab (z.B. Verwechslung mit einem anderen Turnier).
-    const scheduledAtMs = match.scheduledAt.toDate().getTime();
-    const EARLY_START_TOLERANCE_MS = 30 * 60 * 1000;
-    if (update.status !== "scheduled" && scheduledAtMs - Date.now() > EARLY_START_TOLERANCE_MS) {
-      console.warn(
-        `  ${player1Name} vs ${player2Name}: Modell meldet "${update.status}", Match beginnt aber erst ` +
-          `${match.scheduledAt.toDate().toISOString()} — als unplausibel verworfen.`,
-      );
-      continue;
+    if (bzzoiroData) {
+      const found = findBzzoiroMatch(bzzoiroData, player1Name, player2Name);
+      if (found) {
+        update = bzzoiroToUpdate(found.bMatch, found.liveMatch, found.swapped);
+        source = "bzzoiro";
+      }
     }
 
-    if (update.status === "live") anyLive = true;
+    if (!update) {
+      update = await fetchMatchUpdateViaOpenRouter({ eventName: event.name, player1Name, player2Name });
+      source = "openrouter";
+    }
+
+    if (!update || !["scheduled", "live", "finished"].includes(update.status)) continue;
+    if (!passesPlausibilityGuard(match, update, label)) continue;
+
+    if (update.status !== "scheduled") anyStarted = true;
     if (update.status === "scheduled" && match.status === "scheduled") continue; // keine Änderung
 
     await doc.ref.update({
@@ -137,10 +190,10 @@ async function processEvent(event, playerNameById) {
           : match.score ?? null,
     });
     updated += 1;
-    console.log(`  ${player1Name} vs ${player2Name}: ${match.status} -> ${update.status}`);
+    console.log(`  ${label}: ${match.status} -> ${update.status} (Quelle: ${source})`);
   }
 
-  if (anyLive && event.status === "upcoming") {
+  if (anyStarted && event.status === "upcoming") {
     await db.collection("events").doc(event.id).update({ status: "live" });
     console.log(`Event "${event.name}": auf "live" gesetzt.`);
   }
