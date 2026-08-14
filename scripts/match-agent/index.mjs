@@ -26,7 +26,7 @@
 // es das komplette Turnierbaum-Schema, das noch nicht modelliert ist.
 
 import { cert, initializeApp } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
+import { getFirestore, Timestamp } from "firebase-admin/firestore";
 import { bzzoiroToUpdate, findBzzoiroMatch, loadBzzoiroData } from "./bzzoiro.mjs";
 
 const serviceAccount = JSON.parse(process.env.FIREBASE_SERVICE_ACCOUNT_JSON);
@@ -44,9 +44,15 @@ const POST_WINDOW_MS = 12 * 60 * 60 * 1000;
 
 // Plausibilitäts-Check: ein Match kann nicht "live" oder "finished" sein,
 // solange sein (von uns geschätzter) Ansetzungstermin noch deutlich in der
-// Zukunft liegt — fängt sowohl Modell-Halluzinationen als auch fehlerhafte
-// Namens-Zuordnungen bei bzzoiro ab.
+// Zukunft liegt. Gilt NUR für die OpenRouter-Fallback-Quelle (Schutz vor
+// Modell-Halluzinationen) — bei bzzoiro (echte Strukturdaten) würde der
+// Check nur gegen unsere eigene, oft ungenaue geschätzte Zeit prüfen und
+// dadurch echte Updates verwerfen (siehe unten, scheduledAt-Korrektur).
 const EARLY_START_TOLERANCE_MS = 30 * 60 * 1000;
+
+// Ab welcher Abweichung wir unsere geschätzte scheduledAt-Zeit durch die
+// von bzzoiro gemeldete tatsächliche Ansetzungszeit ersetzen.
+const SCHEDULED_AT_DRIFT_TOLERANCE_MS = 5 * 60 * 1000;
 
 // --- OpenRouter (Fallback-Quelle) ---
 
@@ -162,12 +168,14 @@ async function processEvent(event, playerNameById) {
 
     let update = null;
     let source = null;
+    let matchDate = null;
 
     if (bzzoiroData) {
       const found = findBzzoiroMatch(bzzoiroData, player1Name, player2Name);
       if (found) {
         update = bzzoiroToUpdate(found.bMatch, found.liveMatch, found.swapped);
         source = "bzzoiro";
+        matchDate = found.bMatch.match_date ? new Date(found.bMatch.match_date) : null;
       }
     }
 
@@ -177,20 +185,31 @@ async function processEvent(event, playerNameById) {
     }
 
     if (!update || !["scheduled", "live", "finished"].includes(update.status)) continue;
-    if (!passesPlausibilityGuard(match, update, label)) continue;
+    if (source === "openrouter" && !passesPlausibilityGuard(match, update, label)) continue;
 
     if (update.status !== "scheduled") anyStarted = true;
-    if (update.status === "scheduled" && match.status === "scheduled") continue; // keine Änderung
 
-    await doc.ref.update({
-      status: update.status,
-      score:
-        Array.isArray(update.sets) && Array.isArray(update.legs)
-          ? { sets: update.sets, legs: update.legs }
-          : match.score ?? null,
-    });
+    const fields = {};
+    if (update.status !== match.status) fields.status = update.status;
+    if (Array.isArray(update.sets) && Array.isArray(update.legs)) {
+      fields.score = { sets: update.sets, legs: update.legs };
+    }
+    // bzzoiro kennt die echte Ansetzungszeit — unsere eigene ist nur eine
+    // Schätzung (siehe seed-nz-masters-2026.mjs). Korrigieren, damit
+    // "nächstes Spiel" auf der Startseite (sortiert nach scheduledAt) auch
+    // bei noch nicht gestarteten Matches die echte Reihenfolge zeigt.
+    if (matchDate && Math.abs(matchDate.getTime() - match.scheduledAt.toDate().getTime()) > SCHEDULED_AT_DRIFT_TOLERANCE_MS) {
+      fields.scheduledAt = Timestamp.fromDate(matchDate);
+    }
+
+    if (Object.keys(fields).length === 0) continue; // nichts Neues
+
+    await doc.ref.update(fields);
     updated += 1;
-    console.log(`  ${label}: ${match.status} -> ${update.status} (Quelle: ${source})`);
+    console.log(
+      `  ${label}: ${match.status} -> ${fields.status ?? match.status}` +
+        `${fields.scheduledAt ? " (Zeit korrigiert)" : ""} (Quelle: ${source})`,
+    );
   }
 
   if (anyStarted && event.status === "upcoming") {
