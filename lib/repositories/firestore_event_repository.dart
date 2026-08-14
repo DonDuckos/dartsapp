@@ -42,8 +42,15 @@ class FirestoreEventRepository implements EventRepository {
 
   @override
   Stream<DartsMatch?> watchLiveMatch(String eventId) {
-    return _watchMatchesForEvent(eventId)
-        .map((matches) => matches.where((m) => m.status == MatchStatus.live).firstOrNull);
+    return _watchMatchesForEvent(eventId).map((matches) {
+      // Mehrere Matches können kurzzeitig gleichzeitig "live" sein (z.B. ein
+      // Match wechselt gerade auf "finished", während das nächste schon
+      // anläuft) — das zuletzt gestartete soll die Startseite bestimmen,
+      // nicht die zufällige Firestore-Dokumentreihenfolge.
+      final live = matches.where((m) => m.status == MatchStatus.live).toList()
+        ..sort((a, b) => b.scheduledAt.compareTo(a.scheduledAt));
+      return live.firstOrNull;
+    });
   }
 
   @override
