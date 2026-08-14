@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../models/match.dart';
 import '../../models/player.dart';
 import '../../providers/favorites_provider.dart';
+import '../../providers/live_score_provider.dart';
 import '../../providers/repository_providers.dart';
 import '../../theme/app_colors.dart';
 import '../../theme/app_typography.dart';
@@ -157,7 +158,7 @@ class _EmptyHero extends StatelessWidget {
   }
 }
 
-class _HeroLiveCard extends StatelessWidget {
+class _HeroLiveCard extends ConsumerWidget {
   const _HeroLiveCard({
     required this.eventName,
     required this.round,
@@ -175,15 +176,22 @@ class _HeroLiveCard extends StatelessWidget {
   final VoidCallback onTap;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final p1 = playerById[match.player1Id];
     final p2 = playerById[match.player2Id];
     final next1 = nextMatch == null ? null : playerById[nextMatch!.player1Id];
     final next2 = nextMatch == null ? null : playerById[nextMatch!.player2Id];
-    // Ein Match kann "live" sein, bevor die Datenquelle schon Sets/Legs
-    // meldet (z.B. direkt nach Anwurf) — 0:0 ist in dem Fall der korrekte
-    // Anzeigewert, kein fehlender Zustand.
-    final score = match.score ?? const MatchScore(sets: (0, 0), legs: (0, 0));
+
+    // Solange diese Karte sichtbar ist, pollt liveScoreProvider bzzoiro
+    // direkt vom Gerät (niedrigere Latenz als der 15-Min.-Umweg über den
+    // Match-Agent). Fällt auf den Firestore-Wert zurück, solange der erste
+    // Direkt-Poll noch aussteht oder fehlschlägt (z.B. offline), und auf
+    // 0:0, falls beides noch nichts liefert — ein Match kann "live" sein,
+    // bevor irgendeine Quelle schon Sets/Legs meldet (direkt nach Anwurf).
+    final directScore = (p1 != null && p2 != null)
+        ? ref.watch(liveScoreProvider((player1Name: p1.name, player2Name: p2.name))).value
+        : null;
+    final score = directScore ?? match.score ?? const MatchScore(sets: (0, 0), legs: (0, 0));
 
     return InkWell(
       onTap: onTap,

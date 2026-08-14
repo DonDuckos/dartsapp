@@ -58,6 +58,10 @@ scripts/**/node_modules/
 serviceAccountKey*.json
 *.serviceaccount.json
 
+# bzzoiro-API-Key für lokale Debug-Builds (--dart-define-from-file), siehe
+# CLAUDE.md — nie committen
+dart_defines.local.json
+
 # API-Keys für lokale Tests niemals committen
 *.key
 .env
