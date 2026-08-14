@@ -32,6 +32,15 @@ class AuthService {
     await FirebaseAuth.instance.signInWithCredential(credential);
   }
 
+  /// Für Nutzer ohne eigenen Google-Account: Anmeldung mit vorab vergebenen
+  /// Zugangsdaten statt Google Sign-In. Der Benutzername wird intern auf eine
+  /// Fake-E-Mail gemappt (Firebase Auth verlangt für den Email/Password-
+  /// Provider ein E-Mail-Format, auch wenn nie eine Mail dorthin geht).
+  Future<void> signInWithUsername(String username, String password) async {
+    final email = username.contains('@') ? username.trim() : '${username.trim()}@dartsapp.app';
+    await FirebaseAuth.instance.signInWithEmailAndPassword(email: email, password: password);
+  }
+
   Future<void> signOut() async {
     await _ensureInitialized();
     await GoogleSignIn.instance.signOut();

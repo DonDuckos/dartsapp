@@ -37,9 +37,19 @@ class _SignedOutView extends StatefulWidget {
 }
 
 class _SignedOutViewState extends State<_SignedOutView> {
+  final _usernameController = TextEditingController();
+  final _passwordController = TextEditingController();
   bool _loading = false;
+  bool _showUsernameLogin = false;
 
-  Future<void> _signIn() async {
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _signInWithGoogle() async {
     setState(() => _loading = true);
     try {
       await AuthService.instance.signInWithGoogle();
@@ -53,9 +63,23 @@ class _SignedOutViewState extends State<_SignedOutView> {
     }
   }
 
+  Future<void> _signInWithUsername() async {
+    setState(() => _loading = true);
+    try {
+      await AuthService.instance.signInWithUsername(_usernameController.text, _passwordController.text);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Benutzername oder Passwort falsch.')),
+      );
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Padding(
+    return SingleChildScrollView(
       padding: const EdgeInsets.all(24),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -63,7 +87,7 @@ class _SignedOutViewState extends State<_SignedOutView> {
           Text('Noch nicht angemeldet', style: AppTypography.body(size: 16, weight: FontWeight.w600)),
           const SizedBox(height: 8),
           Text(
-            'Melde dich mit Google an, um Lieblingsspieler und Benachrichtigungen geräteübergreifend zu speichern.',
+            'Melde dich an, um Lieblingsspieler und Benachrichtigungen geräteübergreifend zu speichern.',
             textAlign: TextAlign.center,
             style: AppTypography.body(size: 13, color: AppColors.inkMuted),
           ),
@@ -75,7 +99,7 @@ class _SignedOutViewState extends State<_SignedOutView> {
               borderRadius: BorderRadius.circular(999),
               child: InkWell(
                 borderRadius: BorderRadius.circular(999),
-                onTap: _loading ? null : _signIn,
+                onTap: _loading ? null : _signInWithGoogle,
                 child: Padding(
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   child: Center(
@@ -92,6 +116,37 @@ class _SignedOutViewState extends State<_SignedOutView> {
               ),
             ),
           ),
+          const SizedBox(height: 16),
+          if (!_showUsernameLogin)
+            TextButton(
+              onPressed: () => setState(() => _showUsernameLogin = true),
+              child: Text('Mit Zugangsdaten anmelden',
+                  style: AppTypography.body(size: 13, color: AppColors.inkFaint)),
+            )
+          else
+            Column(
+              children: [
+                TextField(
+                  controller: _usernameController,
+                  decoration: const InputDecoration(labelText: 'Benutzername'),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: const InputDecoration(labelText: 'Passwort'),
+                  onSubmitted: (_) => _loading ? null : _signInWithUsername(),
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton(
+                    onPressed: _loading ? null : _signInWithUsername,
+                    child: Text('Anmelden', style: AppTypography.body(size: 14, weight: FontWeight.w600)),
+                  ),
+                ),
+              ],
+            ),
         ],
       ),
     );
