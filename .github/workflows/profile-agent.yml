@@ -1,10 +1,6 @@
 name: Darts Profile Agent
 
 on:
-  schedule:
-    # Einmal wöchentlich, Montag 06:00 UTC — Vitas/Fotos ändern sich selten,
-    # und der Agent überspringt ohnehin bereits befüllte Spieler/Events.
-    - cron: "0 6 * * 1"
   workflow_dispatch: {}
 
 jobs:
