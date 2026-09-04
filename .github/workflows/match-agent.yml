@@ -1,12 +1,6 @@
 name: Darts Match Agent
 
 on:
-  schedule:
-    # Alle 15 Minuten. Das Skript selbst prüft zuerst billig, ob gerade ein
-    # Turnier im relevanten Zeitfenster ansteht, und beendet sich sofort,
-    # falls nicht — die meisten Läufe außerhalb eines Turniers kosten also
-    # keinen OpenRouter-Call.
-    - cron: "*/15 * * * *"
   workflow_dispatch: {}
 
 jobs:
