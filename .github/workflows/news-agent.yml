@@ -1,9 +1,6 @@
 name: Darts News Agent
 
 on:
-  schedule:
-    # Alle 3 Stunden. Cron läuft in UTC.
-    - cron: "0 */3 * * *"
   workflow_dispatch: {}
 
 jobs:
