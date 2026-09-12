@@ -1,71 +1,72 @@
-# Firebase-Setup
+# Firebase setup for local development
 
-Die App ist bereits auf Firebase vorbereitet (`cloud_firestore`, `firebase_auth`, `firebase_core`, `google_sign_in`, `firebase_messaging` sind in `pubspec.yaml`). Aktuell läuft die App noch mit Mock-Daten aus `lib/data/fixtures.dart` — folgende Schritte sind einmalig nötig, um sie an ein echtes, kostenloses Firebase-Projekt anzubinden. Das kann nur der Kontoinhaber selbst tun (Google-Login erforderlich), Claude Code kann das nicht automatisiert übernehmen.
+The app can use Firebase/Firestore for live local development, but **no project-specific Firebase configuration or service-account credentials are included in this repository**.
 
-## 1. Firebase-Projekt anlegen
+You do not need a real Firebase project to read the code or run the repository's offline-oriented tests in CI. A personal Firebase project is only required if you want to exercise the Firestore-backed application locally.
 
-1. https://console.firebase.google.com öffnen, mit dem gewünschten Google-Konto anmelden
-2. „Projekt hinzufügen" → Name z.B. `dartsapp` → Google Analytics kann deaktiviert bleiben (nicht benötigt)
-3. Im **Spark-Plan** (kostenlos) bleiben — für Firestore, Auth und Messaging ausreichend
+## 1. Create your own Firebase project
 
-## 2. Firestore aktivieren
+Create a Firebase project in the Firebase console and enable the services you need, such as:
 
-1. Im Projekt: „Firestore Database" → „Datenbank erstellen"
-2. Produktionsmodus wählen, Region z.B. `eur3 (europe-west)`
-3. Sicherheitsregeln später anpassen (siehe unten) — im Freundeskreis-Rahmen reichen einfache Regeln, da Security bewusst niedrig priorisiert ist (siehe CLAUDE.md)
+- Firestore
+- Firebase Authentication
+- Google Sign-In, if you want to test that flow
 
-## 3. Google Sign-In aktivieren
+Use a project you control. Do not request or reuse the maintainer's production credentials.
 
-1. „Authentication" → „Sign-in method" → „Google" aktivieren
+## 2. Generate FlutterFire configuration
 
-## 4. FlutterFire CLI verbinden
+Install the FlutterFire CLI and configure the local checkout:
 
 ```bash
 dart pub global activate flutterfire_cli
-cd /home/donduckos/dartsapp
 flutterfire configure
 ```
 
-Der Befehl fragt interaktiv nach dem Firebase-Projekt und der Android-Package-ID (`com.dartsapp.dartsapp`) und erzeugt automatisch `lib/firebase_options.dart` sowie `android/app/google-services.json`. Beide Dateien enthalten projektspezifische, aber nicht geheime Konfigurationswerte — trotzdem nicht committen, falls das Repo später öffentlich wird (stehen bereits in `.gitignore`-Kandidaten, ggf. prüfen).
+This normally generates project-specific files such as:
 
-## 5. `main.dart` erweitern
+- `lib/firebase_options.dart`
+- `android/app/google-services.json`
 
-Nach Schritt 4 in `lib/main.dart` ergänzen:
+Both paths are ignored by this repository and should remain uncommitted.
 
-```dart
-import 'package:firebase_core/firebase_core.dart';
-import 'firebase_options.dart';
+## 3. Protect privileged credentials
 
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
-  runApp(const ProviderScope(child: DartsApp()));
-}
+Firebase client configuration is not the same thing as a Firebase Admin service-account credential.
+
+**Never commit:**
+
+- service-account JSON
+- private keys
+- API tokens
+- `.env` files containing credentials
+- local `dart_defines.local.json`
+
+The agent workflows expect privileged values through GitHub Secrets/environment variables, for example `FIREBASE_SERVICE_ACCOUNT_JSON` or provider API keys.
+
+## 4. Firestore rules
+
+Design Firestore rules according to your own deployment and threat model. A useful baseline is:
+
+- public read access only for collections intentionally meant to be public
+- client writes restricted to authenticated users and their own user-scoped data
+- privileged ingestion performed server-side with narrowly scoped credentials
+
+Do not copy permissive prototype rules into a production deployment without reviewing them.
+
+## 5. Local checks
+
+After configuring Firebase, run:
+
+```bash
+flutter pub get
+flutter analyze
+flutter test
+flutter run
 ```
 
-## 6. Firestore-Sicherheitsregeln (Minimal-Variante)
+The public CI workflow uses a non-secret placeholder Firebase options file so that static analysis and tests do not depend on a real Firebase project.
 
-Da Security bewusst niedrig priorisiert ist, reicht ein einfaches Regelwerk: Lesen für alle (auch ohne Login, z.B. für den GitHub-Actions-Newsagent), Schreiben nur für angemeldete Nutzer auf ihr eigenes `users/{uid}`-Dokument. Für den News-Agent-Schreibzugriff (`news`-Collection) wird stattdessen der Firebase Admin SDK Service-Account genutzt, der Regeln umgeht — dafür muss `news` also nicht für normale Nutzer beschreibbar sein.
+## Security reporting
 
-```
-rules_version = '2';
-service cloud.firestore {
-  match /databases/{database}/documents {
-    match /players/{playerId} { allow read: if true; allow write: if false; }
-    match /events/{eventId} {
-      allow read: if true;
-      allow write: if false;
-      match /standings/{playerId} { allow read: if true; allow write: if false; }
-    }
-    match /matches/{matchId} { allow read: if true; allow write: if false; }
-    match /news/{newsId} { allow read: if true; allow write: if false; }
-    match /users/{uid} { allow read, write: if request.auth != null && request.auth.uid == uid; }
-  }
-}
-```
-
-## 7. Repository-Implementierungen ersetzen
-
-Jede Mock-Repository-Klasse (`lib/repositories/*_repository.dart`) hat ein Gegenstück, das noch fehlt: eine `Firestore*Repository`-Klasse, die dasselbe Interface implementiert und `cloud_firestore` statt `Fixtures` nutzt. Danach in `lib/providers/repository_providers.dart` einfach die Provider-Implementierung austauschen — der Rest der App (Screens, Widgets) ändert sich nicht, da alles nur gegen die Interfaces programmiert ist.
-
-Das ist der nächste Implementierungsschritt, sobald das Firebase-Projekt eingerichtet ist — bitte Bescheid geben, wenn Schritt 1–4 erledigt sind.
+If you discover a committed credential or another security-sensitive issue, do not post the secret in a public issue. Follow [SECURITY.md](SECURITY.md).
