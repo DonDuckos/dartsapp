@@ -1,0 +1,55 @@
+name: Public CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  flutter:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          cache: true
+
+      - name: Create non-secret Firebase placeholder for CI
+        shell: bash
+        run: |
+          cat > lib/firebase_options.dart <<'DART'
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => const FirebaseOptions(
+              apiKey: 'ci-placeholder',
+              appId: '1:1:android:ci-placeholder',
+              messagingSenderId: '1',
+              projectId: 'ci-placeholder',
+            );
+          }
+          DART
+
+      - run: flutter pub get
+      - run: flutter analyze
+      - run: flutter test
+
+  match-agent-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: scripts/match-agent
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+          cache-dependency-path: scripts/match-agent/package-lock.json
+      - run: npm ci
+      - run: node test-matching.mjs
